@@ -101,3 +101,18 @@ In **Safari**, open the address → **Share** → **Add to Home Screen**. Open i
 ## Updating
 
 After changing any file, bump `CACHE_VERSION` in `sw.js`. An installed app picks up the new version the next time it's opened online. Close and reopen it once more to see the change.
+
+## Deployment (Cloudflare)
+
+- **Account:** Contact@terracharge.co.uk's Account (`d91a2b60929f91b9a131556eca5d8add`)
+- **Pages project:** `terracharge-sign`, created with nothing published yet
+- **Address:** `https://sign.terracharge.co.uk`, attached to the project (backup address: `terracharge-sign.pages.dev`)
+- **Login lock:** Cloudflare Access, so only approved emails can open the app
+
+The order matters, so the app is never public:
+1. In the dashboard, enable **Zero Trust** (Free plan) once.
+2. Add a DNS record: **CNAME** `sign` → `terracharge-sign.pages.dev`, proxied.
+3. `ALLOWED_EMAILS="you@example.com" ./deploy/setup-access.sh` creates the login lock.
+4. `./deploy/deploy.sh` publishes the app.
+
+Both scripts need `CLOUDFLARE_API_TOKEN` set (Pages: Edit and Access: Apps and Policies: Edit).
