@@ -1,27 +1,29 @@
 /*
  * Builds the completed agreement PDF entirely on the device with jsPDF.
+ * Layout mirrors TerraCharge's paper Unit Hosting Agreement.
  * No network access is needed.
  */
-import { AGREEMENT, fillTokens } from "./agreement.js";
+import { AGREEMENT, fillTokens, segments } from "./agreement.js";
 import { formatDateLong, formatDateTimeFull } from "./util.js";
 
-const BLACK = [11, 11, 11];
-const GREEN = [34, 181, 94];
-const GREEN_DARK = [21, 128, 61];
-const GREY = [110, 110, 110];
-const LIGHT = [244, 246, 245];
-const RULE = [215, 220, 217];
+const DARK = [15, 23, 20]; // #0F1714
+const GREEN = [61, 220, 78]; // #3DDC4E
+const GREEN_TEXT = [37, 170, 55]; // slightly deeper green for small text on white
+const INK = [28, 30, 29];
+const GREY = [105, 110, 108];
+const LIGHT = [245, 247, 246];
+const RULE = [80, 84, 82];
+const HAIR = [218, 222, 220];
 
 const PAGE_W = 210;
 const PAGE_H = 297;
-const M = 18; // margin
-const CW = PAGE_W - M * 2; // content width
-const FOOTER_Y = PAGE_H - 10;
-const BOTTOM = PAGE_H - 20; // last usable y
+const M = 19; // margin (matches original)
+const CW = PAGE_W - M * 2;
+const BOTTOM = PAGE_H - 19;
 
 /**
- * @param {object} r record
- *  { venue, share, reference, textHash,
+ * @param {object} r
+ *  { venue, share, reference, textHash, unitPhoto (dataURL|null),
  *    customer: { name, accepted, signature:{dataUrl,width,height}, signedAt: Date },
  *    terracharge: { signatoryName, position, signature, signedAt: Date },
  *    generatedAt: Date }
@@ -31,285 +33,233 @@ export function buildAgreementPdf(r) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   const A = AGREEMENT;
+  const C = A.company;
   const vals = { venue: r.venue, share: r.share };
   const fill = (t) => fillTokens(t, vals);
 
   doc.setProperties({
-    title: `${A.company.name} ${A.title} — ${r.venue}`,
+    title: `${C.name} ${A.title} — ${r.venue}`,
     subject: `${A.title} v${A.version} — Ref ${r.reference}`,
-    author: A.company.name,
-    creator: "TerraCharge Sign (offline PWA)",
-    keywords: `TerraCharge, hosting agreement, ${r.reference}`,
+    author: C.name,
+    creator: "TerraCharge Sign (offline)",
+    keywords: `TerraCharge, Unit Hosting Agreement, ${r.reference}`,
   });
 
   let y = 0;
-
-  const setText = (size, style = "normal", color = BLACK) => {
+  const font = (size, style = "normal", color = INK) => {
     doc.setFont("helvetica", style);
     doc.setFontSize(size);
     doc.setTextColor(...color);
   };
-
-  const lineH = (size) => size * 0.3528 * 1.45; // pt -> mm with leading
+  const lineH = (size) => size * 0.3528 * 1.5;
 
   const newPage = () => {
     doc.addPage();
-    drawRunningHeader();
-    y = 30;
+    runningHeader();
+    y = 28;
   };
-  const ensure = (h) => {
-    if (y + h > BOTTOM) newPage();
-  };
+  const ensure = (h) => { if (y + h > BOTTOM) newPage(); };
 
-  // Wrapped paragraph with page breaks; returns nothing, advances y.
-  const paragraph = (text, { size = 10, style = "normal", color = BLACK, x = M, width = CW, gap = 2.2 } = {}) => {
-    setText(size, style, color);
-    const lines = doc.splitTextToSize(text, width);
+  function wordmark(x, baseline, size, onDark) {
+    font(size, "bold", onDark ? [255, 255, 255] : DARK);
+    doc.text("TERRA", x, baseline);
+    const w = doc.getTextWidth("TERRA");
+    doc.setTextColor(...(onDark ? GREEN : GREEN_TEXT));
+    doc.text("CHARGE", x + w, baseline);
+  }
+
+  function runningHeader() {
+    wordmark(M, 15, 11, false);
+    font(8, "normal", GREY);
+    doc.text(`${A.title}  ·  ${r.venue}`, PAGE_W - M, 15, { align: "right" });
+    doc.setDrawColor(...HAIR);
+    doc.setLineWidth(0.3);
+    doc.line(M, 19, PAGE_W - M, 19);
+  }
+
+  /** Lay out mixed bold/normal text with wrapping and page breaks. */
+  function rich(segs, x, width, size, { color = INK, gap = 2.6 } = {}) {
+    const words = [];
+    for (const s of segs) for (const t of s.text.split(/(\s+)/)) if (t) words.push({ t, bold: s.bold, color: s.color || color });
+    // Measure per character: jsPDF's getTextWidth applies kerning but text() doesn't,
+    // which would make words overlap the following space.
+    const measure = (w) => {
+      doc.setFont("helvetica", w.bold ? "bold" : "normal");
+      doc.setFontSize(size);
+      let sum = 0;
+      for (const ch of w.t) sum += doc.getTextWidth(ch);
+      return sum;
+    };
+    const lines = [];
+    let cur = [], cw = 0;
+    for (const w of words) {
+      const isSpace = /^\s+$/.test(w.t);
+      if (isSpace && !cur.length) continue;
+      const ww = measure(w);
+      if (!isSpace && cw + ww > width && cur.length) {
+        while (cur.length && /^\s+$/.test(cur[cur.length - 1].t)) cur.pop();
+        lines.push(cur); cur = []; cw = 0;
+      }
+      cur.push({ ...w, w: ww }); cw += ww;
+    }
+    if (cur.length) lines.push(cur);
     const lh = lineH(size);
     for (const ln of lines) {
       ensure(lh);
-      doc.text(ln, x, y + lh * 0.75);
+      let xx = x;
+      for (const w of ln) {
+        font(size, w.bold ? "bold" : "normal", w.color);
+        if (!/^\s+$/.test(w.t)) doc.text(w.t, xx, y + lh * 0.72);
+        xx += w.w;
+      }
       y += lh;
     }
     y += gap;
-  };
-
-  function drawWordmark(x, baseline, size, onDark) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(size);
-    doc.setTextColor(...(onDark ? [255, 255, 255] : BLACK));
-    doc.text("TERRA", x, baseline);
-    const w = doc.getTextWidth("TERRA");
-    doc.setTextColor(...GREEN);
-    doc.text("CHARGE", x + w, baseline);
-    return w + doc.getTextWidth("CHARGE");
   }
 
-  function drawBolt(x, y0, h, color) {
-    // simple lightning bolt mark
-    const s = h / 10;
-    doc.setFillColor(...color);
-    doc.lines(
-      [[3.2 * s, -0.0], [-1.6 * s, 4 * s], [3 * s, 0], [-5.2 * s, 6 * s], [1.4 * s, -4.4 * s], [-2.6 * s, 0]],
-      x + 2.4 * s, y0, [1, 1], "F", true
-    );
+  // ---------------- Header block (as original) ----------------
+  const HX = M, HY = 12, HW = CW, HH = 43;
+  doc.setFillColor(...DARK);
+  doc.rect(HX, HY, HW, HH, "F");
+  wordmark(HX + 6.5, HY + 9.5, 15, true);
+  font(9.5, "italic", [215, 220, 218]);
+  doc.text(A.tagline, HX + 6.5, HY + 15);
+  font(21, "bold", [255, 255, 255]);
+  doc.text(A.title, HX + 6.5, HY + 25.5);
+  font(13, "bold", GREEN);
+  doc.text(A.partiesLine, HX + 6.5, HY + 32.5);
+  font(9.5, "normal", [235, 238, 237]);
+  doc.text(A.descriptor, HX + 6.5, HY + 38.5);
+  if (r.unitPhoto) {
+    const ph = 35, pw = ph * (306 / 365);
+    doc.addImage(r.unitPhoto, "JPEG", HX + HW - 6.5 - pw, HY + 4, pw, ph, undefined, "FAST");
   }
+  font(7.5, "normal", GREY);
+  doc.text(`Agreement v${A.version}   ·   Ref ${r.reference}`, PAGE_W - M, HY + HH + 4.5, { align: "right" });
+  y = HY + HH + 7;
 
-  function drawRunningHeader() {
-    drawBolt(M, 10, 7, GREEN);
-    drawWordmark(M + 7, 15.5, 11, false);
-    setText(8, "normal", GREY);
-    doc.text(`${A.title}  ·  ${r.venue}`, PAGE_W - M, 15.5, { align: "right" });
-    doc.setDrawColor(...RULE);
-    doc.setLineWidth(0.3);
-    doc.line(M, 20, PAGE_W - M, 20);
-  }
+  // ---------------- Parties ----------------
+  const BODY = 10;
+  rich(
+    [{ text: "Parties  ", bold: true, color: GREEN_TEXT }, ...segments(fill(A.parties))],
+    M, CW, BODY, { gap: 2.6 }
+  );
 
-  // ---------- Page 1 masthead ----------
-  doc.setFillColor(...BLACK);
-  doc.rect(0, 0, PAGE_W, 40, "F");
-  doc.setFillColor(...GREEN);
-  doc.rect(0, 40, PAGE_W, 1.4, "F");
-  drawBolt(M, 13, 13, GREEN);
-  drawWordmark(M + 12, 23, 20, true);
-  setText(8.5, "normal", [190, 190, 190]);
-  doc.text(A.subtitle.toUpperCase(), M + 12, 30);
-
-  setText(14, "bold", [255, 255, 255]);
-  doc.text(A.title.toUpperCase(), PAGE_W - M, 21, { align: "right" });
-  setText(8.5, "normal", [190, 190, 190]);
-  doc.text(`Version ${A.version}   ·   Ref ${r.reference}`, PAGE_W - M, 28, { align: "right" });
-
-  y = 50;
-
-  // ---------- Particulars ----------
-  const cells = [
-    ["VENUE", r.venue],
-    ["VENUE REVENUE SHARE", `${r.share}% of net rental revenue`],
-    ["AGREEMENT DATE", formatDateLong(r.customer.signedAt)],
-    ["TERM", "Rolling — no fixed term"],
-  ];
-  const cellW = CW / 2;
-  const cellH = 17;
-  doc.setFillColor(...LIGHT);
-  doc.roundedRect(M, y, CW, cellH * 2, 2.5, 2.5, "F");
-  doc.setFillColor(...GREEN);
-  doc.rect(M, y, 1.4, cellH * 2, "F");
-  cells.forEach(([k, v], i) => {
-    const cx = M + 7 + (i % 2) * cellW;
-    const cy = y + Math.floor(i / 2) * cellH;
-    setText(7, "bold", GREY);
-    doc.text(k, cx, cy + 6.5);
-    setText(11, "bold", BLACK);
-    const vv = doc.splitTextToSize(v, cellW - 12)[0];
-    doc.text(vv, cx, cy + 12.5);
-  });
-  y += cellH * 2 + 9;
-
-  // ---------- Parties / intro ----------
-  A.intro.forEach((p) => paragraph(fill(p), { size: 10, gap: 2.6 }));
-  y += 2;
-
-  // ---------- Clauses ----------
+  // ---------------- Clauses 1–7 ----------------
   A.clauses.forEach((c, i) => {
-    ensure(18);
-    y += 2;
-    setText(11.5, "bold", GREEN_DARK);
-    doc.text(`${i + 1}.`, M, y + 4);
-    setText(11.5, "bold", BLACK);
-    doc.text(c.title, M + 8, y + 4);
-    y += 8;
-    c.paragraphs.forEach((p, j) => {
-      const label = c.paragraphs.length > 1 ? `${i + 1}.${j + 1}` : "";
-      if (label) {
-        ensure(lineH(10));
-        setText(9, "bold", GREY);
-        doc.text(label, M + 8, y + lineH(10) * 0.75);
+    ensure(lineH(BODY) * 2);
+    font(BODY + 1, "bold", GREEN_TEXT);
+    doc.text(String(i + 1), M, y + lineH(BODY) * 0.72);
+    rich([{ text: `${c.title}: `, bold: true }, ...segments(fill(c.text))], M + 7.5, CW - 7.5, BODY, { gap: 1.6 });
+  });
+
+  // ---------------- Signatures (as original: two tables) ----------------
+  y += 0.5;
+  const LABEL_W = 42;
+  const ROW = 8.2;
+  const SIG_ROW = 20;
+
+  function table(heading, rows) {
+    const h = 8.5 + rows.reduce((n, rw) => n + (rw.sig !== undefined ? SIG_ROW : ROW), 0);
+    ensure(h + 4);
+    doc.setFillColor(...LIGHT);
+    doc.rect(M, y, CW, h, "F");
+    doc.setDrawColor(...HAIR);
+    doc.setLineWidth(0.25);
+    doc.rect(M, y, CW, h, "S");
+    doc.setFillColor(...DARK);
+    doc.rect(M, y, CW, 8.5, "F");
+    font(10.5, "bold", [255, 255, 255]);
+    doc.text(heading, M + 4, y + 5.8);
+    y += 8.5;
+    for (const rw of rows) {
+      const rh = rw.sig !== undefined ? SIG_ROW : ROW;
+      font(10, "bold", INK);
+      doc.text(rw.label, M + 4, y + rh - 2.6);
+      const vx = M + LABEL_W;
+      if (rw.sig !== undefined) {
+        // rectangular signature box; signature keeps its proportions
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(...HAIR);
+        doc.setLineWidth(0.3);
+        doc.rect(vx + 1.5, y + 1.8, CW - LABEL_W - 3.5, rh - 3.6, "FD");
+        if (rw.sig) placeContain(doc, rw.sig, vx + 3, y + 2.8, CW - LABEL_W - 6.5, rh - 5.6);
+      } else {
+        font(10.5, "normal", INK);
+        doc.text(doc.splitTextToSize(rw.value || "", CW - LABEL_W - 6)[0] || "", vx + 2.5, y + rh - 2.6);
       }
-      paragraph(fill(p), { x: M + (label ? 17 : 8), width: CW - (label ? 17 : 8), gap: 2.4 });
-    });
-  });
+      doc.setDrawColor(...RULE);
+      doc.setLineWidth(0.3);
+      doc.line(vx, y + rh, M + CW, y + rh);
+      y += rh;
+    }
+    y += 4;
+  }
 
-  // ---------- Acceptance ----------
-  y += 3;
-  const accLines = (() => {
-    setText(10, "normal");
-    return doc.splitTextToSize(fill(A.acceptanceStatement), CW - 16);
-  })();
-  const accH = accLines.length * lineH(10) + 10;
-  ensure(accH + 4);
-  doc.setDrawColor(...GREEN);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(M, y, CW, accH, 2, 2, "S");
-  // tick box
-  doc.setFillColor(...GREEN);
-  doc.roundedRect(M + 4, y + 4.5, 5, 5, 0.8, 0.8, "F");
-  doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(0.7);
-  doc.lines([[1.2, 1.3], [2.4, -2.8]], M + 5.1, y + 7.2, [1, 1], "S");
-  setText(10, "normal", BLACK);
-  accLines.forEach((ln, k) => doc.text(ln, M + 12, y + 8.5 + k * lineH(10)));
-  y += accH + 8;
+  ensure(8 + 8.5 + ROW * 2 + SIG_ROW);
+  font(13, "bold", INK);
+  doc.text("Signatures", M, y + 4.5);
+  y += 7;
 
-  // ---------- Signatures ----------
-  const SIG_BLOCK_H = 74;
-  ensure(SIG_BLOCK_H);
-  setText(12, "bold", BLACK);
-  doc.text("Signatures", M, y + 4);
-  y += 9;
+  const tc = r.terracharge;
+  table(`Signed on behalf of ${C.name}`, [
+    { label: "Name", value: tc.signatoryName + (tc.position ? `, ${tc.position}` : "") },
+    { label: "Signature", sig: tc.signature },
+    { label: "Date", value: formatDateLong(tc.signedAt) },
+  ]);
+  table("The Venue", [
+    { label: "Venue name", value: r.venue },
+    { label: "Your name", value: r.customer.name },
+    { label: "Signature", sig: r.customer.signature },
+    { label: "Date", value: formatDateLong(r.customer.signedAt) },
+  ]);
 
-  const colW = (CW - 8) / 2;
-  const boxH = 34;
-  const blocks = [
-    {
-      heading: `For and on behalf of ${r.venue}`,
-      sig: r.customer.signature,
-      lines: [
-        ["Name", r.customer.name],
-        ["Capacity", "Authorised signatory for the Venue"],
-        ["Date", formatDateLong(r.customer.signedAt)],
-      ],
-    },
-    {
-      heading: `For and on behalf of ${A.company.name}`,
-      sig: r.terracharge.signature,
-      lines: [
-        ["Name", r.terracharge.signatoryName],
-        ["Position", r.terracharge.position || "Authorised signatory"],
-        ["Date", formatDateLong(r.terracharge.signedAt)],
-      ],
-    },
-  ];
-  blocks.forEach((b, i) => {
-    const x = M + i * (colW + 8);
-    let yy = y;
-    setText(8, "bold", GREY);
-    doc.text(doc.splitTextToSize(b.heading.toUpperCase(), colW)[0], x, yy + 3);
-    yy += 6;
-    doc.setDrawColor(...RULE);
-    doc.setLineWidth(0.4);
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(x, yy, colW, boxH, 1.5, 1.5, "FD");
-    if (b.sig) placeContain(doc, b.sig, x + 3, yy + 3, colW - 6, boxH - 6);
-    yy += boxH + 5;
-    b.lines.forEach(([k, v]) => {
-      setText(8, "bold", GREY);
-      doc.text(k.toUpperCase(), x, yy);
-      setText(9.5, "normal", BLACK);
-      doc.text(doc.splitTextToSize(v, colW - 20)[0] || "", x + 19, yy);
-      yy += 5.4;
-    });
-  });
-  y += 6 + boxH + 5 + 5.4 * 3 + 6;
-
-  // ---------- Signing record (audit) ----------
-  const rows = [
-    ["Agreement", `${A.title}, version ${A.version} (effective ${A.effectiveDate})`],
+  // ---------------- Signing record ----------------
+  const recRows = [
+    ["Agreement", `${A.title}, version ${A.version}`],
     ["Document reference", r.reference],
     ["Venue", r.venue],
-    ["Agreed revenue share", `${r.share}% of net rental revenue`],
+    ["Agreed revenue share", `${r.share}% of the revenue generated by the Unit (Clause 4)`],
     ["Venue signatory", r.customer.name],
-    ["Terms accepted", r.customer.accepted ? "Yes — signatory ticked the acceptance confirmation before signing" : "No"],
+    ["Terms accepted", r.customer.accepted ? `Yes — before signing, the signatory ticked: “${fill(A.acceptanceStatement)}”` : "No"],
     ["Venue signed at", formatDateTimeFull(r.customer.signedAt)],
-    ["Countersigned by", `${r.terracharge.signatoryName}${r.terracharge.position ? `, ${r.terracharge.position}` : ""} (${A.company.name})`],
-    ["Countersigned at", formatDateTimeFull(r.terracharge.signedAt)],
+    ["Countersigned by", `${tc.signatoryName}${tc.position ? `, ${tc.position}` : ""}, on behalf of ${C.name}`],
+    ["Countersigned at", formatDateTimeFull(tc.signedAt)],
     ["PDF generated at", formatDateTimeFull(r.generatedAt)],
-    ["Method", "Signed by finger on TerraCharge's device; generated offline. No data sent to any server."],
+    ["Method", "Signed by finger on TerraCharge’s device and generated offline. No data was sent to any server."],
     ["Terms fingerprint", `SHA-256 ${r.textHash}`],
   ];
-  setText(9, "normal");
-  const valW = CW - 52;
-  const rowHeights = rows.map(([, v]) => Math.max(1, doc.splitTextToSize(v, valW).length) * lineH(9) + 2.4);
-  const recH = rowHeights.reduce((a, b) => a + b, 0) + 16;
-  ensure(Math.min(recH, BOTTOM - 30));
-  if (y > 31) {
-    doc.setDrawColor(...RULE);
-    doc.setLineWidth(0.3);
-    doc.line(M, y, PAGE_W - M, y);
-  }
-  y += 7;
-  setText(12, "bold", BLACK);
-  doc.text("Signing Record", M, y);
-  y += 6;
-  rows.forEach(([k, v], i) => {
-    const h = rowHeights[i];
+  const valX = M + 46, valW = CW - 49;
+  font(9, "normal");
+  const heights = recRows.map(([, v]) => doc.splitTextToSize(v, valW).length * lineH(9) + 2.6);
+  const recH = heights.reduce((a, b) => a + b, 0) + 12;
+  if (y + recH > BOTTOM) newPage(); else y += 2;
+  font(13, "bold", INK);
+  doc.text("Signing Record", M, y + 4.5);
+  font(8.5, "normal", GREY);
+  doc.text("Electronic signature audit details", PAGE_W - M, y + 4.5, { align: "right" });
+  y += 8;
+  recRows.forEach(([k, v], i) => {
+    const h = heights[i];
     ensure(h);
-    if (i % 2 === 0) {
-      doc.setFillColor(...LIGHT);
-      doc.rect(M, y, CW, h, "F");
-    }
-    setText(8.5, "bold", GREY);
-    doc.text(k, M + 3, y + lineH(9) * 0.75 + 1.2);
-    const isHash = k === "Terms fingerprint";
-    if (isHash) { doc.setFont("courier", "normal"); doc.setFontSize(8); doc.setTextColor(...BLACK); }
-    else setText(9, "normal", BLACK);
-    doc.splitTextToSize(v, valW).forEach((ln, j) => doc.text(ln, M + 49, y + lineH(9) * (0.75 + j) + 1.2));
+    if (i % 2 === 0) { doc.setFillColor(...LIGHT); doc.rect(M, y, CW, h, "F"); }
+    font(8.5, "bold", GREY);
+    doc.text(k, M + 3, y + lineH(9) * 0.72 + 1.3);
+    if (k === "Terms fingerprint") { doc.setFont("courier", "normal"); doc.setFontSize(8); doc.setTextColor(...INK); }
+    else font(9, "normal", INK);
+    doc.splitTextToSize(v, valW).forEach((ln, j) => doc.text(ln, valX, y + lineH(9) * (0.72 + j) + 1.3));
     y += h;
   });
 
-  // ---------- Footers / watermark on every page ----------
+  // ---------------- Footer on every page (as original + page numbers) ----------------
   const total = doc.getNumberOfPages();
+  const contact = [C.name, `Company no. ${C.companyNumber}`, C.website, C.email, C.phone].join("  ·  ");
   for (let p = 1; p <= total; p++) {
     doc.setPage(p);
-    doc.setDrawColor(...RULE);
-    doc.setLineWidth(0.3);
-    doc.line(M, FOOTER_Y - 4.5, PAGE_W - M, FOOTER_Y - 4.5);
-    setText(7.5, "normal", GREY);
-    const co = [A.company.name, A.company.companyNumber && `Company No. ${A.company.companyNumber}`, A.company.registeredAddress]
-      .filter(Boolean).join("  ·  ");
-    doc.text(`${co}  ·  ${A.title} v${A.version}  ·  Ref ${r.reference}`, M, FOOTER_Y);
-    doc.text(`Page ${p} of ${total}`, PAGE_W - M, FOOTER_Y, { align: "right" });
-
-    if (A.isPlaceholder) {
-      doc.saveGraphicsState();
-      doc.setGState(new doc.GState({ opacity: 0.13 }));
-      setText(40, "bold", [200, 30, 30]);
-      const wm = "DRAFT – PLACEHOLDER TERMS";
-      const ww = doc.getTextWidth(wm);
-      const th = (35 * Math.PI) / 180; // rotate about the page centre
-      doc.text(wm, PAGE_W / 2 - (ww / 2) * Math.cos(th), PAGE_H / 2 + (ww / 2) * Math.sin(th), { angle: 35 });
-      doc.restoreGraphicsState();
-    }
+    font(8.5, "normal", GREY);
+    doc.text(contact, PAGE_W / 2, PAGE_H - 13, { align: "center" });
+    font(7, "normal", [150, 154, 152]);
+    doc.text(`${A.title} v${A.version}  ·  Ref ${r.reference}  ·  Page ${p} of ${total}`, PAGE_W / 2, PAGE_H - 8.5, { align: "center" });
   }
 
   return doc.output("blob");

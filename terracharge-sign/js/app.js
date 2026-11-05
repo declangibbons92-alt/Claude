@@ -126,8 +126,10 @@ $("#toAgreement").addEventListener("click", () => {
 });
 
 /* ------------------------------ Agreement ------------------------------ */
+/** Escape, apply **bold** markup, and highlight the inserted venue/commission. */
 function fillHtml(text) {
   return escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replaceAll("{{VENUE}}", `<mark class="fill">${escapeHtml(state.venue)}</mark>`)
     .replaceAll("{{SHARE}}", `<mark class="fill">${state.share}%</mark>`);
 }
@@ -136,30 +138,26 @@ function renderAgreement() {
   const A = AGREEMENT;
   $("#draftBanner").hidden = !A.isPlaceholder;
   const clauses = A.clauses
-    .map((c, i) => {
-      const paras = c.paragraphs
-        .map((p, j) => `<p>${c.paragraphs.length > 1 ? `<span class="n">${i + 1}.${j + 1}</span>` : ""}<span>${fillHtml(p)}</span></p>`)
-        .join("");
-      return `<section class="doc__clause"><h3><b>${i + 1}.</b> ${escapeHtml(c.title)}</h3>${paras}</section>`;
-    })
+    .map((c, i) => `<li><span class="n">${i + 1}</span><p><strong>${escapeHtml(c.title)}:</strong> ${fillHtml(c.text)}</p></li>`)
     .join("");
 
   $("#docBody").innerHTML = `
     <header class="doc__head">
-      <div class="doc__brand"><svg><use href="#bolt"/></svg>TERRA<span>CHARGE</span></div>
-      <div class="doc__title">${escapeHtml(A.title)}</div>
-      <div class="doc__meta">${escapeHtml(A.subtitle)} · Version ${escapeHtml(A.version)} · Ref ${escapeHtml(state.reference)}</div>
+      <div class="doc__headtext">
+        <div class="doc__brand">TERRA<span>CHARGE</span></div>
+        <div class="doc__tagline">${escapeHtml(A.tagline)}</div>
+        <div class="doc__title">${escapeHtml(A.title)}</div>
+        <div class="doc__parties">${escapeHtml(A.partiesLine)}</div>
+        <div class="doc__meta">${escapeHtml(A.descriptor)}</div>
+      </div>
+      <img class="doc__photo" src="icons/unit.jpg" alt="TerraCharge power bank station" />
     </header>
-    <dl class="doc__particulars">
-      <div><dt>Venue</dt><dd>${escapeHtml(state.venue)}</dd></div>
-      <div><dt>Revenue share</dt><dd>${state.share}%</dd></div>
-      <div><dt>Date</dt><dd id="particularsDate">${formatDateLong(new Date())}</dd></div>
-      <div><dt>Term</dt><dd>Rolling</dd></div>
-    </dl>
+    <div class="doc__ref">Agreement v${escapeHtml(A.version)} · Ref ${escapeHtml(state.reference)}</div>
     <div class="doc__body">
-      ${A.intro.map((p) => `<p>${fillHtml(p)}</p>`).join("")}
-      ${clauses}
-    </div>`;
+      <p class="doc__partiesline"><b class="g">Parties</b> ${fillHtml(A.parties)}</p>
+      <ol class="doc__clauses">${clauses}</ol>
+    </div>
+    <footer class="doc__foot">${[A.company.name, `Company no. ${A.company.companyNumber}`, A.company.website, A.company.email, A.company.phone].map(escapeHtml).join(" · ")}</footer>`;
 
   $("#acceptText").innerHTML = fillHtml(A.acceptanceStatement);
   $("#signerName").value = state.customer.name;
@@ -178,8 +176,6 @@ function refreshSignState() {
   const ready = c.name.length >= 3 && c.name.includes(" ") && c.accepted;
 
   $("#signDate").textContent = formatDateLong(signDate());
-  const pd = $("#particularsDate");
-  if (pd) pd.textContent = formatDateLong(signDate());
 
   // Customer signature box
   const box = $("#customerSigBox");
@@ -328,6 +324,23 @@ $("#pinForm").addEventListener("submit", async (e) => {
 });
 
 /* ------------------------------ PDF ------------------------------ */
+let unitPhotoCache;
+async function loadUnitPhoto() {
+  if (unitPhotoCache !== undefined) return unitPhotoCache;
+  try {
+    const blob = await (await fetch("icons/unit.jpg")).blob();
+    unitPhotoCache = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result);
+      fr.onerror = rej;
+      fr.readAsDataURL(blob);
+    });
+  } catch {
+    unitPhotoCache = null; // PDF still builds without the photo
+  }
+  return unitPhotoCache;
+}
+
 $("#generateBtn").addEventListener("click", generatePdf);
 
 async function generatePdf() {
@@ -342,12 +355,13 @@ async function generatePdf() {
       share: state.share,
       reference: state.reference,
       textHash,
+      unitPhoto: await loadUnitPhoto(),
       customer: { ...state.customer },
       terracharge: state.tc,
       generatedAt: new Date(),
     };
     const blob = buildAgreementPdf(record);
-    const name = `TerraCharge-Hosting-Agreement-${slug(state.venue)}-${isoLocalDate(state.customer.signedAt)}.pdf`;
+    const name = `TerraCharge-Unit-Hosting-Agreement-${slug(state.venue)}-${isoLocalDate(state.customer.signedAt)}.pdf`;
     state.pdf = { blob, name };
     state.saved = false;
     busy(true, "Preparing preview…");

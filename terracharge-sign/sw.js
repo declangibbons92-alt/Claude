@@ -3,7 +3,7 @@
  * signing and PDF creation work with no signal.
  * Bump CACHE_VERSION whenever you change any file (e.g. the agreement text).
  */
-const CACHE_VERSION = "tc-sign-v1";
+const CACHE_VERSION = "tc-sign-v2";
 const ASSETS = [
   "./",
   "index.html",
@@ -22,6 +22,7 @@ const ASSETS = [
   "icons/icon-512.png",
   "icons/icon-maskable-512.png",
   "icons/apple-touch-icon.png",
+  "icons/unit.jpg",
 ];
 
 self.addEventListener("install", (event) => {

@@ -4,19 +4,13 @@ An offline, installable iPhone web app (PWA) for signing TerraCharge Ltd venue h
 
 No accounts, no server and no tracking. Customer details and signatures stay in the iPhone's memory while an agreement is open. The finished PDF only goes where you send it with the iOS share sheet.
 
-## ⚠️ Before real use: add the exact agreement wording
+## Agreement wording
 
-The original paper agreement PDF wasn't available when this was built. `js/agreement.js` holds **placeholder** wording that follows the agreed structure: 7 clauses, a rolling agreement, termination on notice and no fixed 12-month term. While `isPlaceholder: true` is set:
+`js/agreement.js` holds the **exact wording** of TerraCharge's *Unit Hosting Agreement*, copied from `TerraCharge_12_Month_Hosting_Agreement.pdf` (8 Oct 2026). It contains the Parties line and clauses 1–7: Purpose, Term (rolling), Exclusivity, Revenue Share, Ownership of Equipment, Payment Details and Ending the Agreement. There is no fixed 12-month term, even though the file name says "12 Month". The app inserts the venue name into the Parties line and 20% or 30% into Clause 4. Nothing else in the app contains contract wording.
 
-- the app shows a "Draft terms" banner, and
-- every PDF page carries a **DRAFT – PLACEHOLDER TERMS** watermark.
+The acceptance checkbox text ("I have read and agree…") is part of the signing step, not a contract clause. It is recorded in the PDF's Signing Record.
 
-To finalise:
-
-1. Paste the exact clause wording into `js/agreement.js`. Use `{{VENUE}}` and `{{SHARE}}` where the venue name and percentage go.
-2. Fill in the `company` details (company number, address).
-3. Set `isPlaceholder: false`, set `version` (e.g. `"1.0"`) and `effectiveDate`.
-4. Bump `CACHE_VERSION` in `sw.js` (e.g. `tc-sign-v2`) so installed iPhones update.
+If the wording ever changes: edit `js/agreement.js`, bump `version`, and bump `CACHE_VERSION` in `sw.js`.
 
 ## How it works
 
@@ -29,7 +23,7 @@ To finalise:
 
 ### The PDF contains
 
-The full agreement, the venue particulars, the agreed commission and both signatures with names and dates. It ends with a **Signing Record** that shows:
+Page 1 matches the paper agreement: the header with the product photo, the Parties line with the venue name, clauses 1–7 with the agreed commission, and the TerraCharge and Venue signature tables with both signatures and dates. Page 2 is a **Signing Record** that shows:
 
 - the agreement version
 - the document reference
@@ -50,13 +44,14 @@ Set it up once under **TerraCharge signature** on the home screen. The image and
 ```
 index.html            App shell (all screens)
 css/app.css           Styling (black / white / green)
-js/agreement.js       ← The ONLY place contract wording lives
+js/agreement.js       ← The ONLY place contract wording lives (exact text)
 js/app.js             Screens and flow
 js/signature-pad.js   Finger signature capture
 js/pdf-builder.js     PDF layout (jsPDF, fully offline)
 js/vault.js           Encrypted TerraCharge signature storage
 sw.js                 Offline cache (service worker)
 manifest.webmanifest  Home-screen install details
+icons/unit.jpg        Product photo from the original agreement
 vendor/               jsPDF 2.5.2 and pdf.js 3.11.174 (bundled, MIT / Apache-2.0)
 _headers              Security headers for Cloudflare Pages
 ```
