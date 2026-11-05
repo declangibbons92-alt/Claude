@@ -35,7 +35,7 @@ document.addEventListener("click", (e) => {
   const a = e.target.closest("[data-action]");
   if (!a) return;
   const act = a.dataset.action;
-  if (act === "new") startNew();
+  if (act === "new") startNew(Number(a.dataset.share));
   else if (act === "home") goHome();
   else if (act === "settings") { settingsReturn = "home"; show("settings"); }
   else if (act === "details") show("details");
@@ -77,30 +77,34 @@ function refreshHome() {
 }
 
 /* ------------------------------ Details ------------------------------ */
-function startNew() {
+// The revenue share is chosen on the home screen (20% / 30% cards).
+let pendingShare = null;
+let keepVenueName = false; // set when "Change" is tapped on the details screen
+
+function startNew(share) {
   state = freshState();
-  $("#venueName").value = "";
-  $$(".seg--share").forEach((b) => b.setAttribute("aria-checked", "false"));
+  pendingShare = share;
+  if (!keepVenueName) $("#venueName").value = "";
+  keepVenueName = false;
+  $("#shareChipPct").textContent = `${share}%`;
+  $("#detailsTitle").textContent = `${share}% Agreement`;
   $("#signerName").value = "";
   setPosition("");
   updateDetailsButton();
+  vibrate();
   show("details");
-  setTimeout(() => $("#venueName").focus(), 260);
+  if (!$("#venueName").value) setTimeout(() => $("#venueName").focus(), 260);
 }
 
 $("#venueName").addEventListener("input", updateDetailsButton);
 $("#venueName").addEventListener("keydown", (e) => { if (e.key === "Enter") e.target.blur(); });
-$$(".seg--share").forEach((b) =>
-  b.addEventListener("click", () => {
-    $$(".seg--share").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
-    vibrate();
-    updateDetailsButton();
-  })
-);
+$("#changeShare").addEventListener("click", () => {
+  keepVenueName = true;
+  show("home");
+});
 
 function selectedShare() {
-  const b = $('.seg--share[aria-checked="true"]');
-  return b ? Number(b.dataset.share) : null;
+  return pendingShare;
 }
 function updateDetailsButton() {
   $("#toAgreement").disabled = !($("#venueName").value.trim().length >= 2 && selectedShare());

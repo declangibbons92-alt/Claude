@@ -12,7 +12,7 @@ If the wording ever changes: edit `js/agreement.js`, bump `version`, and bump `C
 
 ## How it works
 
-1. **New Agreement**: enter the venue name and choose 20% or 30%.
+1. On the home screen, tap **20%** or **30%** to start that hosting agreement, then enter the venue name.
 2. The full agreement appears as one scrolling page, with the venue and commission filled in.
 3. The customer enters their full name, picks **Manager** or **Owner**, and taps **Tap to Sign**. The date is filled in automatically from the iPhone.
 4. They sign on a full-screen white pad (**Clear / Cancel / Confirm**). The signature is cropped and placed in the signature box at its original proportions.
