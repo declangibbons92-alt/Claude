@@ -157,6 +157,8 @@ button { font: inherit; color: inherit; }
 .seg[aria-checked="true"] strong { color: var(--green); }
 .seg[aria-checked="true"] small { color: #b8bfbb; }
 
+.segmented--sm .seg { padding: 14px 10px; }
+.segmented--sm .seg strong { font-size: 18px; letter-spacing: 0; }
 .error { color: var(--red); font-size: 14px; margin: -6px 0 14px; }
 .hint { text-align: center; font-size: 14px; color: var(--grey-500); margin: 10px 0 0; }
 

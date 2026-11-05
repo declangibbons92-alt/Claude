@@ -69,8 +69,8 @@
       <div class="field">
         <span class="field__label">Venue revenue share</span>
         <div class="segmented" role="radiogroup" aria-label="Revenue share">
-          <button role="radio" aria-checked="false" data-share="20" class="seg"><strong>20%</strong><small>of Unit revenue</small></button>
-          <button role="radio" aria-checked="false" data-share="30" class="seg"><strong>30%</strong><small>of Unit revenue</small></button>
+          <button role="radio" aria-checked="false" data-share="20" class="seg seg--share"><strong>20%</strong><small>of Unit revenue</small></button>
+          <button role="radio" aria-checked="false" data-share="30" class="seg seg--share"><strong>30%</strong><small>of Unit revenue</small></button>
         </div>
       </div>
     </main>
@@ -101,15 +101,17 @@
         </label>
 
         <div class="field">
+          <span class="field__label">Position</span>
+          <div class="segmented segmented--sm" role="radiogroup" aria-label="Position">
+            <button role="radio" aria-checked="false" data-position="Manager" class="seg"><strong>Manager</strong></button>
+            <button role="radio" aria-checked="false" data-position="Owner" class="seg"><strong>Owner</strong></button>
+          </div>
+        </div>
+        <div class="field">
           <span class="field__label">Date</span>
           <div class="input input--static" id="signDate"></div>
         </div>
 
-        <label class="check">
-          <input type="checkbox" id="acceptTerms" />
-          <span class="check__box"><svg><use href="#check"/></svg></span>
-          <span class="check__text" id="acceptText"></span>
-        </label>
 
         <div class="sigbox" id="customerSigBox" data-empty="true">
           <span class="sigbox__label">Venue signature</span>
@@ -120,7 +122,7 @@
         <button class="btn btn--green btn--xl btn--block" id="tapToSign" disabled>
           <svg class="i"><use href="#pen"/></svg> Tap to Sign
         </button>
-        <p class="hint" id="signHint">Enter your full name and tick the box to sign.</p>
+        <p class="hint" id="signHint">Enter your full name and position to sign.</p>
       </section>
 
       <section class="sign sign--tc" id="tcSection" hidden>

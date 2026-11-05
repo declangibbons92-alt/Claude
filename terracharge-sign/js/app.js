@@ -1,7 +1,7 @@
-import { AGREEMENT, canonicalText } from "./agreement.js";
+import { AGREEMENT } from "./agreement.js";
 import { SignaturePad } from "./signature-pad.js";
 import { buildAgreementPdf } from "./pdf-builder.js";
-import { cryptoAvailable, vaultInfo, saveVault, deleteVault, unlockVault, sha256Hex } from "./vault.js";
+import { cryptoAvailable, vaultInfo, saveVault, deleteVault, unlockVault } from "./vault.js";
 import { $, $$, escapeHtml, formatDateLong, isoLocalDate, makeReference, slug, vibrate } from "./util.js";
 
 /* ------------------------------------------------------------------ */
@@ -14,7 +14,7 @@ function freshState() {
     venue: "",
     share: null,
     reference: null,
-    customer: { name: "", accepted: false, signature: null, signedAt: null },
+    customer: { name: "", position: "", signature: null, signedAt: null },
     tc: null,
     pdf: null, // { blob, name }
     saved: false,
@@ -80,9 +80,9 @@ function refreshHome() {
 function startNew() {
   state = freshState();
   $("#venueName").value = "";
-  $$(".seg").forEach((b) => b.setAttribute("aria-checked", "false"));
+  $$(".seg--share").forEach((b) => b.setAttribute("aria-checked", "false"));
   $("#signerName").value = "";
-  $("#acceptTerms").checked = false;
+  setPosition("");
   updateDetailsButton();
   show("details");
   setTimeout(() => $("#venueName").focus(), 260);
@@ -90,16 +90,16 @@ function startNew() {
 
 $("#venueName").addEventListener("input", updateDetailsButton);
 $("#venueName").addEventListener("keydown", (e) => { if (e.key === "Enter") e.target.blur(); });
-$$(".seg").forEach((b) =>
+$$(".seg--share").forEach((b) =>
   b.addEventListener("click", () => {
-    $$(".seg").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+    $$(".seg--share").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
     vibrate();
     updateDetailsButton();
   })
 );
 
 function selectedShare() {
-  const b = $('.seg[aria-checked="true"]');
+  const b = $('.seg--share[aria-checked="true"]');
   return b ? Number(b.dataset.share) : null;
 }
 function updateDetailsButton() {
@@ -159,9 +159,8 @@ function renderAgreement() {
     </div>
     <footer class="doc__foot">${[A.company.name, `Company no. ${A.company.companyNumber}`, A.company.website, A.company.email, A.company.phone].map(escapeHtml).join(" · ")}</footer>`;
 
-  $("#acceptText").innerHTML = fillHtml(A.acceptanceStatement);
   $("#signerName").value = state.customer.name;
-  $("#acceptTerms").checked = state.customer.accepted;
+  setPosition(state.customer.position);
   refreshSignState();
 }
 
@@ -172,8 +171,7 @@ function signDate() {
 function refreshSignState() {
   const c = state.customer;
   c.name = $("#signerName").value.trim().replace(/\s+/g, " ");
-  c.accepted = $("#acceptTerms").checked;
-  const ready = c.name.length >= 3 && c.name.includes(" ") && c.accepted;
+  const ready = c.name.length >= 3 && c.name.includes(" ") && !!c.position;
 
   $("#signDate").textContent = formatDateLong(signDate());
 
@@ -186,15 +184,15 @@ function refreshSignState() {
   $("#tapToSign").disabled = !ready;
   $("#signHint").hidden = !!c.signature;
   $("#signHint").textContent = !c.name
-    ? "Enter your full name and tick the box to sign."
+    ? "Enter your full name and position to sign."
     : !c.name.includes(" ") || c.name.length < 3
       ? "Please enter your full name (first and last)."
-      : !c.accepted
-        ? "Tick the box to confirm you agree to the terms."
+      : !c.position
+        ? "Select Manager or Owner."
         : "Ready to sign.";
 
-  // If the customer's name or acceptance changes after TerraCharge approved, approval is void.
-  if (state.tc && (c.name !== state.tc.approvedName || !c.accepted || !c.signature)) {
+  // If the customer's name or position changes after TerraCharge approved, approval is void.
+  if (state.tc && (c.name !== state.tc.approvedName || c.position !== state.tc.approvedPosition || !c.signature)) {
     state.tc = null;
     state.pdf = null;
   }
@@ -219,7 +217,13 @@ function refreshSignState() {
 
 $("#signerName").addEventListener("input", refreshSignState);
 $("#signerName").addEventListener("keydown", (e) => { if (e.key === "Enter") e.target.blur(); });
-$("#acceptTerms").addEventListener("change", () => { vibrate(); refreshSignState(); });
+function setPosition(pos) {
+  state.customer.position = pos;
+  $$("[data-position]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.position === pos)));
+}
+$$("[data-position]").forEach((b) =>
+  b.addEventListener("click", () => { setPosition(b.dataset.position); vibrate(); refreshSignState(); })
+);
 
 $("#tapToSign").addEventListener("click", () => {
   openPad({
@@ -304,6 +308,7 @@ $("#pinForm").addEventListener("submit", async (e) => {
       signature: v.signature,
       signedAt: new Date(),
       approvedName: state.customer.name,
+      approvedPosition: state.customer.position,
     };
     $("#pinSheet").hidden = true;
     $("#pinInput").value = "";
@@ -348,13 +353,10 @@ async function generatePdf() {
   busy(true, "Creating PDF…");
   try {
     await new Promise((r) => setTimeout(r, 30)); // let the spinner paint
-    const vals = { venue: state.venue, share: state.share };
-    const textHash = await sha256Hex(canonicalText(vals));
     const record = {
       venue: state.venue,
       share: state.share,
       reference: state.reference,
-      textHash,
       unitPhoto: await loadUnitPhoto(),
       customer: { ...state.customer },
       terracharge: state.tc,

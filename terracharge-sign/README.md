@@ -8,30 +8,31 @@ No accounts, no server and no tracking. Customer details and signatures stay in 
 
 `js/agreement.js` holds the **exact wording** of TerraCharge's *Unit Hosting Agreement*, copied from `TerraCharge_12_Month_Hosting_Agreement.pdf` (8 Oct 2026). It contains the Parties line and clauses 1–7: Purpose, Term (rolling), Exclusivity, Revenue Share, Ownership of Equipment, Payment Details and Ending the Agreement. There is no fixed 12-month term, even though the file name says "12 Month". The app inserts the venue name into the Parties line and 20% or 30% into Clause 4. Nothing else in the app contains contract wording.
 
-The acceptance checkbox text ("I have read and agree…") is part of the signing step, not a contract clause. It is recorded in the PDF's Signing Record.
-
 If the wording ever changes: edit `js/agreement.js`, bump `version`, and bump `CACHE_VERSION` in `sw.js`.
 
 ## How it works
 
 1. **New Agreement**: enter the venue name and choose 20% or 30%.
 2. The full agreement appears as one scrolling page, with the venue and commission filled in.
-3. The customer enters their full name, ticks the acceptance box and taps **Tap to Sign**. The date is filled in automatically from the iPhone.
+3. The customer enters their full name, picks **Manager** or **Owner**, and taps **Tap to Sign**. The date is filled in automatically from the iPhone.
 4. They sign on a full-screen white pad (**Clear / Cancel / Confirm**). The signature is cropped and placed in the signature box at its original proportions.
 5. **Approve & Countersign**: you enter your approval passcode, and only then is the TerraCharge signature applied.
 6. **Create PDF**: the PDF is built on the phone. You can preview every page and then tap **Save / Share PDF**, which opens the iOS share sheet (→ *Save to Files*, AirDrop, Mail, etc.).
 
 ### The PDF contains
 
-Page 1 matches the paper agreement: the header with the product photo, the Parties line with the venue name, clauses 1–7 with the agreed commission, and the TerraCharge and Venue signature tables with both signatures and dates. Page 2 is a **Signing Record** that shows:
+One A4 page, laid out like the paper agreement:
+- the header with the product photo
+- the Parties line with the venue name
+- clauses 1–7 with the agreed commission
+- the "Signed on behalf of TerraCharge Ltd" and "The Venue" tables (venue name, name, position, signature and date)
 
+A small reference line in the footer records:
 - the agreement version
 - the document reference
-- the signer's name
-- confirmation that the terms were accepted
-- the venue and TerraCharge signing date/time, with time zone
-- when the PDF was generated
-- a SHA-256 fingerprint of the exact terms that were signed
+- the exact signing times and time zone
+
+If a very long venue name would push it onto a second page, the layout tightens automatically so it stays on one page.
 
 ### TerraCharge signature security
 
@@ -92,7 +93,7 @@ In **Safari**, open the address → **Share** → **Add to Home Screen**. Open i
 
 - [ ] Home → TerraCharge signature: set up your signature and passcode
 - [ ] New Agreement → venue name, 20% / 30% → the agreement shows the correct values
-- [ ] Name, tick box and Tap to Sign → sign → the signature appears in the box
+- [ ] Name, Manager/Owner and Tap to Sign → sign → the signature appears in the box
 - [ ] Approve & Countersign → a wrong passcode is rejected → the correct one applies the signature
 - [ ] Create PDF → check every page → Save / Share PDF → Save to Files
 - [ ] Turn on Airplane Mode, force-quit the app, reopen it from the icon and repeat the steps above

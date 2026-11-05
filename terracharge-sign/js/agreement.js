@@ -69,9 +69,6 @@ export const AGREEMENT = {
     },
   ],
 
-  // Checkbox shown to the signer (part of the signing process, not a contract clause).
-  acceptanceStatement:
-    "I have read and agree to the terms of this agreement, and I am authorised to sign it on behalf of {{VENUE}}.",
 };
 
 /** Replace tokens in a string (markup is left in place). */
@@ -87,13 +84,4 @@ export function plain(text) {
 /** Split "**bold** normal" into [{ text, bold }] segments. */
 export function segments(text) {
   return text.split("**").map((t, i) => ({ text: t, bold: i % 2 === 1 })).filter((s) => s.text);
-}
-
-/** Canonical plain-text rendering, used for the SHA-256 integrity fingerprint. */
-export function canonicalText(vals) {
-  const a = AGREEMENT;
-  const f = (t) => plain(fillTokens(t, vals));
-  const lines = [`${a.company.name} — ${a.title} — v${a.version}`, `Parties: ${f(a.parties)}`];
-  a.clauses.forEach((c, i) => lines.push(`${i + 1} ${c.title}: ${f(c.text)}`));
-  return lines.join("\n");
 }
