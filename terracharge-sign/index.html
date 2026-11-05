@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>TerraCharge Sign</title>
+  <meta name="description" content="TerraCharge venue hosting agreements, signed on site." />
+  <meta name="theme-color" content="#0b0b0b" />
+  <meta name="color-scheme" content="light" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="TerraCharge" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="vendor/jspdf.umd.min.js" defer></script>
+  <script src="vendor/pdf.min.js" defer></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="bolt" viewBox="0 0 24 24"><path d="M13.5 1.5 4 13.6h6.3L9 22.5l10-12.6h-6.4z" fill="currentColor"/></symbol>
+    <symbol id="chev" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="gear" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="share" viewBox="0 0 24 24"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  </svg>
+
+  <!-- ================= HOME ================= -->
+  <section class="screen screen--dark is-active" data-screen="home">
+    <div class="home">
+      <div class="home__brand">
+        <div class="logo-mark"><svg><use href="#bolt"/></svg></div>
+        <h1 class="wordmark wordmark--xl">TERRA<span>CHARGE</span></h1>
+        <p class="home__tag">Venue Hosting Agreements</p>
+      </div>
+      <div class="home__actions">
+        <button class="btn btn--green btn--xl" data-action="new">New Agreement</button>
+        <button class="btn btn--ghost-light" data-action="settings">
+          <svg class="i"><use href="#gear"/></svg> TerraCharge signature
+        </button>
+        <p class="home__status" id="homeStatus"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DETAILS ================= -->
+  <section class="screen" data-screen="details">
+    <header class="bar">
+      <button class="bar__back" data-action="home" aria-label="Back"><svg><use href="#chev"/></svg></button>
+      <div class="bar__title">New Agreement</div>
+      <div class="bar__spacer"></div>
+    </header>
+    <main class="scroll pad">
+      <h2 class="h2">Venue details</h2>
+      <p class="muted">These are inserted into the agreement automatically.</p>
+
+      <label class="field">
+        <span class="field__label">Venue name</span>
+        <input id="venueName" class="input" type="text" autocomplete="off" autocapitalize="words" enterkeyhint="done" placeholder="e.g. The Red Lion" maxlength="120" />
+      </label>
+
+      <div class="field">
+        <span class="field__label">Venue revenue share</span>
+        <div class="segmented" role="radiogroup" aria-label="Revenue share">
+          <button role="radio" aria-checked="false" data-share="20" class="seg"><strong>20%</strong><small>of net revenue</small></button>
+          <button role="radio" aria-checked="false" data-share="30" class="seg"><strong>30%</strong><small>of net revenue</small></button>
+        </div>
+      </div>
+    </main>
+    <footer class="dock">
+      <button class="btn btn--black btn--block" id="toAgreement" disabled>Show Agreement</button>
+    </footer>
+  </section>
+
+  <!-- ================= AGREEMENT ================= -->
+  <section class="screen" data-screen="agreement">
+    <header class="bar">
+      <button class="bar__back" data-action="details" aria-label="Back"><svg><use href="#chev"/></svg></button>
+      <div class="bar__title">Agreement</div>
+      <div class="bar__spacer"></div>
+    </header>
+    <main class="scroll" id="agreementScroll">
+      <div id="draftBanner" class="draft-banner" hidden>
+        <strong>Draft terms.</strong> The clause wording is a placeholder until the exact text from the TerraCharge paper agreement is added. Do not use for real signings.
+      </div>
+      <article class="doc" id="docBody"><!-- rendered by app.js --></article>
+
+      <section class="sign" id="signSection">
+        <h3 class="sign__h">Venue signature</h3>
+
+        <label class="field">
+          <span class="field__label">Full name of signatory</span>
+          <input id="signerName" class="input" type="text" autocomplete="name" autocapitalize="words" enterkeyhint="done" placeholder="First and last name" maxlength="80" />
+        </label>
+
+        <div class="field">
+          <span class="field__label">Date</span>
+          <div class="input input--static" id="signDate"></div>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" id="acceptTerms" />
+          <span class="check__box"><svg><use href="#check"/></svg></span>
+          <span class="check__text" id="acceptText"></span>
+        </label>
+
+        <div class="sigbox" id="customerSigBox" data-empty="true">
+          <span class="sigbox__label">Venue signature</span>
+          <img alt="Venue signature" id="customerSigImg" />
+          <button class="sigbox__redo" id="customerSigRedo" hidden>Sign again</button>
+        </div>
+
+        <button class="btn btn--green btn--xl btn--block" id="tapToSign" disabled>
+          <svg class="i"><use href="#pen"/></svg> Tap to Sign
+        </button>
+        <p class="hint" id="signHint">Enter your full name and tick the box to sign.</p>
+      </section>
+
+      <section class="sign sign--tc" id="tcSection" hidden>
+        <h3 class="sign__h">TerraCharge countersignature</h3>
+        <p class="muted small">For TerraCharge staff. Hand the iPhone back to TerraCharge.</p>
+        <div class="sigbox" id="tcSigBox" data-empty="true">
+          <span class="sigbox__label">TerraCharge signature</span>
+          <img alt="TerraCharge signature" id="tcSigImg" />
+        </div>
+        <p class="tc-meta" id="tcMeta"></p>
+        <button class="btn btn--black btn--block" id="approveBtn">
+          <svg class="i"><use href="#lock"/></svg> Approve &amp; Countersign
+        </button>
+        <button class="btn btn--green btn--xl btn--block" id="generateBtn" hidden>Create PDF</button>
+      </section>
+      <div class="end-spacer"></div>
+    </main>
+  </section>
+
+  <!-- ================= PREVIEW ================= -->
+  <section class="screen screen--grey" data-screen="preview">
+    <header class="bar">
+      <button class="bar__back" data-action="agreement" aria-label="Back"><svg><use href="#chev"/></svg></button>
+      <div class="bar__title">Completed PDF</div>
+      <div class="bar__spacer"></div>
+    </header>
+    <main class="scroll" id="pdfPages"></main>
+    <footer class="dock dock--row">
+      <button class="btn btn--outline" data-action="finish">Done</button>
+      <button class="btn btn--green grow" id="shareBtn"><svg class="i"><use href="#share"/></svg> Save / Share PDF</button>
+    </footer>
+  </section>
+
+  <!-- ================= SETTINGS ================= -->
+  <section class="screen" data-screen="settings">
+    <header class="bar">
+      <button class="bar__back" data-action="home" aria-label="Back"><svg><use href="#chev"/></svg></button>
+      <div class="bar__title">TerraCharge Signature</div>
+      <div class="bar__spacer"></div>
+    </header>
+    <main class="scroll pad">
+      <div id="vaultExisting" hidden>
+        <div class="card card--ok">
+          <svg class="i"><use href="#lock"/></svg>
+          <div>
+            <strong>Authorised signature stored</strong>
+            <p class="small" id="vaultExistingText"></p>
+          </div>
+        </div>
+        <button class="btn btn--outline btn--block" id="vaultReplace">Replace signature</button>
+        <button class="btn btn--danger-text btn--block" id="vaultDelete">Delete stored signature</button>
+      </div>
+
+      <form id="vaultForm" hidden autocomplete="off">
+        <p class="muted">Your signature is encrypted on this iPhone with a passcode. It is only added to an agreement when you approve it with that passcode. It never leaves the device.</p>
+        <label class="field">
+          <span class="field__label">Signatory name</span>
+          <input id="tcName" class="input" type="text" autocapitalize="words" required maxlength="80" placeholder="Your full name" />
+        </label>
+        <label class="field">
+          <span class="field__label">Position</span>
+          <input id="tcPosition" class="input" type="text" autocapitalize="words" maxlength="80" placeholder="e.g. Director" value="Director" />
+        </label>
+        <div class="field">
+          <span class="field__label">Signature</span>
+          <div class="sigbox" id="tcSetupBox" data-empty="true">
+            <span class="sigbox__label">Tap to draw your signature</span>
+            <img alt="" id="tcSetupImg" />
+          </div>
+        </div>
+        <label class="field">
+          <span class="field__label">Approval passcode (6+ digits)</span>
+          <input id="tcPin" class="input" type="password" inputmode="numeric" pattern="[0-9]*" minlength="6" maxlength="12" autocomplete="new-password" />
+        </label>
+        <label class="field">
+          <span class="field__label">Confirm passcode</span>
+          <input id="tcPin2" class="input" type="password" inputmode="numeric" pattern="[0-9]*" minlength="6" maxlength="12" autocomplete="new-password" />
+        </label>
+        <p class="error" id="vaultError" hidden></p>
+        <button class="btn btn--green btn--block" type="submit">Save securely</button>
+      </form>
+
+      <p class="muted small about" id="aboutText"></p>
+    </main>
+  </section>
+
+  <!-- ================= SIGNATURE PAD ================= -->
+  <div class="sigpad" id="sigpad" hidden>
+    <div class="sigpad__top">
+      <span class="sigpad__title" id="sigpadTitle">Sign below</span>
+      <span class="sigpad__sub" id="sigpadSub"></span>
+    </div>
+    <div class="sigpad__area">
+      <canvas id="sigCanvas"></canvas>
+      <div class="sigpad__line"><span>✕</span></div>
+      <div class="sigpad__ghost" id="sigGhost">Sign here with your finger</div>
+    </div>
+    <div class="sigpad__actions">
+      <button class="btn btn--outline" id="sigClear">Clear</button>
+      <button class="btn btn--outline" id="sigCancel">Cancel</button>
+      <button class="btn btn--green" id="sigConfirm" disabled>Confirm</button>
+    </div>
+  </div>
+
+  <!-- ================= PASSCODE SHEET ================= -->
+  <div class="sheet-backdrop" id="pinSheet" hidden>
+    <form class="sheet" id="pinForm" autocomplete="off">
+      <div class="sheet__grab"></div>
+      <h3 class="h3"><svg class="i"><use href="#lock"/></svg> Approve completion</h3>
+      <p class="muted small">Enter the TerraCharge approval passcode to apply the authorised signature.</p>
+      <input id="pinInput" class="input input--pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="12" />
+      <p class="error" id="pinError" hidden></p>
+      <div class="sheet__row">
+        <button type="button" class="btn btn--outline" id="pinCancel">Cancel</button>
+        <button type="submit" class="btn btn--black grow" id="pinOk">Approve</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="busy" id="busy" hidden><div class="spinner"></div><span id="busyText">Working…</span></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
