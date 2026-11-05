@@ -150,9 +150,12 @@
       <div class="bar__spacer"></div>
     </header>
     <main class="scroll" id="pdfPages"></main>
-    <footer class="dock dock--row">
-      <button class="btn btn--outline" data-action="finish">Done</button>
-      <button class="btn btn--green grow" id="shareBtn"><svg class="i"><use href="#share"/></svg> Save / Share PDF</button>
+    <footer class="dock dock--save">
+      <p class="save-hint" id="saveHint">Tap <b>Save to Files</b>, then choose <b>Save to Files</b> and your agreements folder. Your iPhone remembers the folder next time.</p>
+      <div class="dock--row">
+        <button class="btn btn--outline" data-action="finish" id="doneBtn">Done</button>
+        <button class="btn btn--green grow" id="shareBtn"><svg class="i"><use href="#share"/></svg> Save to Files</button>
+      </div>
     </footer>
   </section>
 

@@ -366,6 +366,7 @@ async function generatePdf() {
     const name = `TerraCharge-Unit-Hosting-Agreement-${slug(state.venue)}-${isoLocalDate(state.customer.signedAt)}.pdf`;
     state.pdf = { blob, name };
     state.saved = false;
+    resetSaveUi();
     busy(true, "Preparing preview…");
     await renderPreview(blob);
     show("preview");
@@ -411,7 +412,7 @@ $("#shareBtn").addEventListener("click", async () => {
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file], title: state.pdf.name });
-      state.saved = true;
+      markSaved();
       return;
     }
   } catch (err) {
@@ -427,8 +428,27 @@ $("#shareBtn").addEventListener("click", async () => {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
-  state.saved = true;
+  markSaved();
 });
+
+function markSaved() {
+  state.saved = true;
+  $("#saveHint").textContent = "Saved. Tap Finish to start the next agreement.";
+  $("#saveHint").classList.add("ok");
+  $("#shareBtn").classList.replace("btn--green", "btn--outline");
+  $("#shareBtn").lastChild.textContent = " Save again";
+  $("#doneBtn").classList.replace("btn--outline", "btn--green");
+  $("#doneBtn").textContent = "Finish";
+}
+
+function resetSaveUi() {
+  $("#saveHint").innerHTML = "Tap <b>Save to Files</b>, then choose <b>Save to Files</b> and your agreements folder. Your iPhone remembers the folder next time.";
+  $("#saveHint").classList.remove("ok");
+  $("#shareBtn").classList.replace("btn--outline", "btn--green");
+  $("#shareBtn").lastChild.textContent = " Save to Files";
+  $("#doneBtn").classList.replace("btn--green", "btn--outline");
+  $("#doneBtn").textContent = "Done";
+}
 
 function finish() {
   if (!state.saved && !confirm("You haven't saved or shared this PDF yet. Finish anyway? It will be discarded.")) return;

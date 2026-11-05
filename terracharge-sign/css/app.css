@@ -76,6 +76,8 @@ button { font: inherit; color: inherit; }
   flex-shrink: 0;
 }
 .dock--row { display: flex; gap: 10px; }
+.save-hint { margin: 0 0 10px; font-size: 13px; line-height: 1.4; color: var(--grey-500); text-align: center; }
+.save-hint.ok { color: var(--green-dark); font-weight: 600; }
 .grow { flex: 1; }
 
 /* ---------- Buttons ---------- */

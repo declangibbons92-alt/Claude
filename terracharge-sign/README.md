@@ -17,7 +17,7 @@ If the wording ever changes: edit `js/agreement.js`, bump `version`, and bump `C
 3. The customer enters their full name, picks **Manager** or **Owner**, and taps **Tap to Sign**. The date is filled in automatically from the iPhone.
 4. They sign on a full-screen white pad (**Clear / Cancel / Confirm**). The signature is cropped and placed in the signature box at its original proportions.
 5. **Approve & Countersign**: you enter your approval passcode, and only then is the TerraCharge signature applied.
-6. **Create PDF**: the PDF is built on the phone. You can preview every page and then tap **Save / Share PDF**, which opens the iOS share sheet (→ *Save to Files*, AirDrop, Mail, etc.).
+6. **Create PDF**: the PDF is built on the phone. You can preview every page and then tap **Save to Files**. This opens the iOS share sheet: choose *Save to Files* and pick a folder (e.g. iCloud Drive → TerraCharge Agreements). iOS remembers the last folder you used, so after the first time it's just a confirm tap. Web apps aren't allowed to save into Files without that tap.
 
 ### The PDF contains
 
