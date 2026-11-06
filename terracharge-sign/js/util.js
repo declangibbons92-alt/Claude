@@ -49,3 +49,10 @@ export function slug(s) {
 export function vibrate(ms = 10) {
   try { navigator.vibrate?.(ms); } catch { /* iOS ignores */ }
 }
+
+/** Attach an event listener if the element exists (never throws if it doesn't). */
+export function on(sel, type, fn, opts) {
+  const el = typeof sel === "string" ? document.querySelector(sel) : sel;
+  if (el) el.addEventListener(type, fn, opts);
+  else console.warn("Missing element for listener:", sel);
+}

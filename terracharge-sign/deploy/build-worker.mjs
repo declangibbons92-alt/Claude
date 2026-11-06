@@ -4,6 +4,7 @@
 //
 //   node deploy/build-worker.mjs <output-file>
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join, relative, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -33,9 +34,10 @@ for (const f of INCLUDE.flatMap(walk)) {
   const ext = extname(f);
   if (!TYPES[ext]) continue;
   const buf = readFileSync(join(APP, f));
+  const e = `"${createHash("sha1").update(buf).digest("hex").slice(0, 16)}"`;
   files["/" + relative(".", f).split("\\").join("/")] = TEXT.has(ext)
-    ? { t: TYPES[ext], s: buf.toString("utf8") }
-    : { t: TYPES[ext], b: buf.toString("base64") };
+    ? { t: TYPES[ext], e, s: buf.toString("utf8") }
+    : { t: TYPES[ext], e, b: buf.toString("base64") };
 }
 
 const SECURITY = {
@@ -63,10 +65,13 @@ export default {
     if (path === "/" || path === "") path = "/index.html";
     const f = FILES[path];
     if (!f) return new Response("Not found", { status: 404, headers: SECURITY });
-    const noCache = path === "/index.html" || path === "/sw.js" || path === "/manifest.webmanifest";
-    return new Response(request.method === "HEAD" ? null : body(path, f), {
-      headers: { ...SECURITY, "Content-Type": f.t, "Cache-Control": noCache ? "no-cache" : "public, max-age=3600" },
-    });
+    // Always revalidate (cheap 304 via ETag) so old and new files never mix after an update.
+    const headers = { ...SECURITY, "Content-Type": f.t, "Cache-Control": "no-cache", ETag: f.e };
+    const inm = request.headers.get("If-None-Match");
+    if (inm && inm.split(",").map((s) => s.trim().replace(/^W\\//, "")).includes(f.e)) {
+      return new Response(null, { status: 304, headers });
+    }
+    return new Response(request.method === "HEAD" ? null : body(path, f), { headers });
   },
 };
 `;

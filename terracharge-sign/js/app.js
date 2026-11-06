@@ -2,7 +2,7 @@ import { AGREEMENT } from "./agreement.js";
 import { SignaturePad } from "./signature-pad.js";
 import { buildAgreementPdf } from "./pdf-builder.js";
 import { getTcSignature, saveTcSignature, deleteTcSignature } from "./signature-store.js";
-import { $, $$, escapeHtml, formatDateLong, isoLocalDate, makeReference, slug, vibrate } from "./util.js";
+import { $, $$, on, escapeHtml, formatDateLong, isoLocalDate, makeReference, slug, vibrate } from "./util.js";
 
 /* ------------------------------------------------------------------ */
 /* State — held in memory only. Customer details and signatures are    */
@@ -96,9 +96,9 @@ function startNew(share) {
   if (!$("#venueName").value) setTimeout(() => $("#venueName").focus(), 260);
 }
 
-$("#venueName").addEventListener("input", updateDetailsButton);
-$("#venueName").addEventListener("keydown", (e) => { if (e.key === "Enter") e.target.blur(); });
-$("#changeShare").addEventListener("click", () => {
+on("#venueName", "input", updateDetailsButton);
+on("#venueName", "keydown", (e) => { if (e.key === "Enter") e.target.blur(); });
+on("#changeShare", "click", () => {
   keepVenueName = true;
   show("home");
 });
@@ -110,7 +110,7 @@ function updateDetailsButton() {
   $("#toAgreement").disabled = !($("#venueName").value.trim().length >= 2 && selectedShare());
 }
 
-$("#toAgreement").addEventListener("click", () => {
+on("#toAgreement", "click", () => {
   const venue = $("#venueName").value.trim().replace(/\s+/g, " ");
   const share = selectedShare();
   // If the terms changed after signing, the signatures no longer apply.
@@ -219,8 +219,8 @@ function refreshSignState() {
   $("#generateBtn").hidden = !state.tc;
 }
 
-$("#signerName").addEventListener("input", refreshSignState);
-$("#signerName").addEventListener("keydown", (e) => { if (e.key === "Enter") e.target.blur(); });
+on("#signerName", "input", refreshSignState);
+on("#signerName", "keydown", (e) => { if (e.key === "Enter") e.target.blur(); });
 function setPosition(pos) {
   state.customer.position = pos;
   $$("[data-position]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.position === pos)));
@@ -229,7 +229,7 @@ $$("[data-position]").forEach((b) =>
   b.addEventListener("click", () => { setPosition(b.dataset.position); vibrate(); refreshSignState(); })
 );
 
-$("#tapToSign").addEventListener("click", () => {
+on("#tapToSign", "click", () => {
   openPad({
     title: "Venue signature",
     sub: `${state.customer.name} · ${state.venue}`,
@@ -243,7 +243,7 @@ $("#tapToSign").addEventListener("click", () => {
     },
   });
 });
-$("#customerSigRedo").addEventListener("click", () => {
+on("#customerSigRedo", "click", () => {
   state.customer.signature = null;
   state.customer.signedAt = null;
   state.tc = null;
@@ -273,9 +273,9 @@ function closePad() {
   $("#sigpad").hidden = true;
   padOpts = null;
 }
-$("#sigClear").addEventListener("click", () => pad.clear());
-$("#sigCancel").addEventListener("click", closePad);
-$("#sigConfirm").addEventListener("click", () => {
+on("#sigClear", "click", () => pad.clear());
+on("#sigCancel", "click", closePad);
+on("#sigConfirm", "click", () => {
   const sig = pad.export();
   if (!sig) return;
   const cb = padOpts.onConfirm;
@@ -286,7 +286,7 @@ $("#sigConfirm").addEventListener("click", () => {
 
 /* ------------------------------ TerraCharge approval ------------------------------ */
 let settingsReturn = "home";
-$("#approveBtn").addEventListener("click", () => {
+on("#approveBtn", "click", () => {
   const v = getTcSignature();
   if (!v) {
     settingsReturn = "agreement";
@@ -324,7 +324,7 @@ async function loadUnitPhoto() {
   return unitPhotoCache;
 }
 
-$("#generateBtn").addEventListener("click", generatePdf);
+on("#generateBtn", "click", generatePdf);
 
 async function generatePdf() {
   if (!window.jspdf) return toast("PDF engine not loaded — reopen the app.");
@@ -384,7 +384,7 @@ async function renderPreview(blob) {
   pdf.destroy();
 }
 
-$("#shareBtn").addEventListener("click", async () => {
+on("#shareBtn", "click", async () => {
   if (!state.pdf) return;
   const file = new File([state.pdf.blob], state.pdf.name, { type: "application/pdf" });
   try {
@@ -454,7 +454,7 @@ function renderSettings() {
     "Customer details and signatures are kept in memory only while an agreement is open, and are never sent to any server.";
 }
 
-$("#tcSetupBox").addEventListener("click", () => {
+on("#tcSetupBox", "click", () => {
   openPad({
     title: "TerraCharge signature",
     sub: $("#tcName").value.trim(),
@@ -466,21 +466,21 @@ $("#tcSetupBox").addEventListener("click", () => {
   });
 });
 
-$("#vaultReplace").addEventListener("click", () => {
+on("#vaultReplace", "click", () => {
   if (!confirm("Replace the stored TerraCharge signature?")) return;
   $("#vaultExisting").hidden = true;
   $("#vaultForm").hidden = false;
   setupSig = null;
   $("#tcSetupBox").dataset.empty = "true";
 });
-$("#vaultDelete").addEventListener("click", () => {
+on("#vaultDelete", "click", () => {
   if (!confirm("Delete the stored TerraCharge signature from this iPhone?")) return;
   deleteTcSignature();
   toast("Signature deleted");
   renderSettings();
 });
 
-$("#vaultForm").addEventListener("submit", (e) => {
+on("#vaultForm", "submit", (e) => {
   e.preventDefault();
   const err = (m) => { $("#vaultError").textContent = m; $("#vaultError").hidden = false; };
   const name = $("#tcName").value.trim();
