@@ -104,15 +104,22 @@ After changing any file, bump `CACHE_VERSION` in `sw.js`. An installed app picks
 
 ## Deployment (Cloudflare)
 
+**Live at https://sign.terracharge.co.uk**, locked with Cloudflare Access. Only **contact@terracharge.co.uk** can log in, using a one-time code sent by email. The backup address `terracharge-sign.pages.dev` has the same lock.
+
 - **Account:** Contact@terracharge.co.uk's Account (`d91a2b60929f91b9a131556eca5d8add`)
-- **Pages project:** `terracharge-sign`, created with nothing published yet
-- **Address:** `https://sign.terracharge.co.uk`, attached to the project (backup address: `terracharge-sign.pages.dev`)
-- **Login lock:** Cloudflare Access, so only approved emails can open the app
+- **Pages project:** `terracharge-sign` (production branch `main`)
+- **Access application:** "TerraCharge Sign" (30-day login), policy "TerraCharge owner only"
 
-The order matters, so the app is never public:
-1. In the dashboard, enable **Zero Trust** (Free plan) once.
-2. Add a DNS record: **CNAME** `sign` → `terracharge-sign.pages.dev`, proxied.
-3. `ALLOWED_EMAILS="you@example.com" ./deploy/setup-access.sh` creates the login lock.
-4. `./deploy/deploy.sh` publishes the app.
+### Publishing an update
 
-Both scripts need `CLOUDFLARE_API_TOKEN` set (Pages: Edit and Access: Apps and Policies: Edit).
+1. Make the change and bump `CACHE_VERSION` in `sw.js`.
+2. Build the single-file bundle and upload it. This needs only an API token with **Cloudflare Pages: Edit**:
+
+```bash
+node deploy/build-worker.mjs /tmp/_worker.js
+curl -X POST "https://api.cloudflare.com/client/v4/accounts/d91a2b60929f91b9a131556eca5d8add/pages/projects/terracharge-sign/deployments" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  -F 'manifest={}' -F 'branch=main' -F "_worker.js=@/tmp/_worker.js;type=application/javascript+module"
+```
+
+On a normal computer, `./deploy/deploy.sh` (wrangler) works too. To change who can log in, edit the policy in **Zero Trust → Access → Applications**, or run `deploy/setup-access.sh` on a fresh account.
