@@ -16,7 +16,7 @@ If the wording ever changes: edit `js/agreement.js`, bump `version`, and bump `C
 2. The full agreement appears as one scrolling page, with the venue and commission filled in.
 3. The customer enters their full name, picks **Manager** or **Owner**, and taps **Tap to Sign**. The date is filled in automatically from the iPhone.
 4. They sign on a full-screen white pad (**Clear / Cancel / Confirm**). The signature is cropped and placed in the signature box at its original proportions.
-5. **Approve & Countersign**: you enter your approval passcode, and only then is the TerraCharge signature applied.
+5. **Add TerraCharge signature**: one tap adds your saved signature.
 6. **Create PDF**: the PDF is built on the phone. You can preview every page and then tap **Save to Files**. This opens the iOS share sheet: choose *Save to Files* and pick a folder (e.g. iCloud Drive → TerraCharge Agreements). iOS remembers the last folder you used, so after the first time it's just a confirm tap. Web apps aren't allowed to save into Files without that tap.
 
 ### The PDF contains
@@ -34,11 +34,11 @@ A small reference line in the footer records:
 
 If a very long venue name would push it onto a second page, the layout tightens automatically so it stays on one page.
 
-### TerraCharge signature security
+### Your TerraCharge signature
 
-Set it up once under **TerraCharge signature** on the home screen. The image and signatory details are encrypted on the device (AES-256-GCM, with the key derived from your 6–12 digit passcode using PBKDF2-SHA-256 at 310,000 iterations). Only the encrypted data is stored, in this app's local storage on this iPhone. After 5 wrong passcodes, there's an increasing lockout. This protects against casual misuse of an unlocked phone; it is not a substitute for keeping the phone itself locked.
+You draw it once under **TerraCharge signature** on the home screen. It is saved in this app's storage on this iPhone only (never sent anywhere) and added to each agreement with one tap. You can replace or delete it on the same screen.
 
-> Deleting the app from the home screen, or clearing Safari website data, removes the stored signature. You'll just need to set it up again.
+> Deleting the app from the home screen, or clearing Safari website data, removes the saved signature. You'll just need to draw it again.
 
 ## Project structure
 
@@ -49,7 +49,7 @@ js/agreement.js       ← The ONLY place contract wording lives (exact text)
 js/app.js             Screens and flow
 js/signature-pad.js   Finger signature capture
 js/pdf-builder.js     PDF layout (jsPDF, fully offline)
-js/vault.js           Encrypted TerraCharge signature storage
+js/signature-store.js Saved TerraCharge signature (on this device only)
 sw.js                 Offline cache (service worker)
 manifest.webmanifest  Home-screen install details
 icons/unit.jpg        Product photo from the original agreement
@@ -71,7 +71,7 @@ python3 -m http.server 8080
 
 ### On your iPhone
 
-The iPhone needs to open the app over **HTTPS**. iOS only allows offline mode, home-screen install and the encrypted signature storage on secure (HTTPS) sites. Plain `http://192.168.x.x` from your Mac will show the screens, but setting up the TerraCharge signature and offline mode won't work. There are two private options:
+The iPhone needs to open the app over **HTTPS**. iOS only allows offline mode and home-screen install on secure (HTTPS) sites. Plain `http://192.168.x.x` from your Mac will show the screens, but offline mode won't work. There are two private options:
 
 **A. Temporary tunnel from your Mac (no account needed).**
 
@@ -91,10 +91,10 @@ In **Safari**, open the address → **Share** → **Add to Home Screen**. Open i
 
 ### Test checklist
 
-- [ ] Home → TerraCharge signature: set up your signature and passcode
+- [ ] Home → TerraCharge signature: draw and save your signature
 - [ ] New Agreement → venue name, 20% / 30% → the agreement shows the correct values
 - [ ] Name, Manager/Owner and Tap to Sign → sign → the signature appears in the box
-- [ ] Approve & Countersign → a wrong passcode is rejected → the correct one applies the signature
+- [ ] Add TerraCharge signature → your saved signature appears
 - [ ] Create PDF → check every page → Save / Share PDF → Save to Files
 - [ ] Turn on Airplane Mode, force-quit the app, reopen it from the icon and repeat the steps above
 

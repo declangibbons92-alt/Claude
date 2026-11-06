@@ -1,7 +1,7 @@
 import { AGREEMENT } from "./agreement.js";
 import { SignaturePad } from "./signature-pad.js";
 import { buildAgreementPdf } from "./pdf-builder.js";
-import { cryptoAvailable, vaultInfo, saveVault, deleteVault, unlockVault } from "./vault.js";
+import { getTcSignature, saveTcSignature, deleteTcSignature } from "./signature-store.js";
 import { $, $$, escapeHtml, formatDateLong, isoLocalDate, makeReference, slug, vibrate } from "./util.js";
 
 /* ------------------------------------------------------------------ */
@@ -71,7 +71,7 @@ function refreshHome() {
   const el = $("#homeStatus");
   const parts = [];
   if (AGREEMENT.isPlaceholder) parts.push("Draft terms — not for real signings");
-  if (!vaultInfo()) parts.push("TerraCharge signature not set up");
+  if (!getTcSignature()) parts.push("TerraCharge signature not set up");
   el.textContent = parts.length ? parts.join(" · ") : `Agreement v${AGREEMENT.version} · Ready`;
   el.classList.toggle("warn", parts.length > 0);
 }
@@ -206,15 +206,15 @@ function refreshSignState() {
   const tbox = $("#tcSigBox");
   tbox.dataset.empty = String(!state.tc);
   if (state.tc) $("#tcSigImg").src = state.tc.signature.dataUrl;
-  const info = vaultInfo();
+  const info = getTcSignature();
   $("#tcMeta").textContent = state.tc
-    ? `Approved by ${state.tc.signatoryName}${state.tc.position ? `, ${state.tc.position}` : ""} on ${formatDateLong(state.tc.signedAt)}`
+    ? `Signed by ${state.tc.signatoryName} on ${formatDateLong(state.tc.signedAt)}`
     : info
-      ? `Will be signed by ${info.signatoryName}${info.position ? `, ${info.position}` : ""} after passcode approval.`
+      ? `Signed by ${info.signatoryName}.`
       : "No TerraCharge signature is set up on this iPhone yet.";
   $("#approveBtn").hidden = !!state.tc;
   $("#approveBtn").innerHTML = info
-    ? `<svg class="i"><use href="#lock"/></svg> Approve &amp; Countersign`
+    ? `<svg class="i"><use href="#pen"/></svg> Add TerraCharge signature`
     : `<svg class="i"><use href="#gear"/></svg> Set up TerraCharge signature`;
   $("#generateBtn").hidden = !state.tc;
 }
@@ -287,49 +287,23 @@ $("#sigConfirm").addEventListener("click", () => {
 /* ------------------------------ TerraCharge approval ------------------------------ */
 let settingsReturn = "home";
 $("#approveBtn").addEventListener("click", () => {
-  if (!vaultInfo()) {
+  const v = getTcSignature();
+  if (!v) {
     settingsReturn = "agreement";
     show("settings");
     return;
   }
-  $("#pinError").hidden = true;
-  $("#pinInput").value = "";
-  $("#pinSheet").hidden = false;
-  setTimeout(() => $("#pinInput").focus(), 50);
-});
-$("#pinCancel").addEventListener("click", () => ($("#pinSheet").hidden = true));
-$("#pinSheet").addEventListener("click", (e) => { if (e.target.id === "pinSheet") $("#pinSheet").hidden = true; });
-$("#pinForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const pin = $("#pinInput").value;
-  if (!pin) return;
-  $("#pinOk").disabled = true;
-  try {
-    const v = await unlockVault(pin);
-    state.tc = {
-      signatoryName: v.signatoryName,
-      position: v.position,
-      signature: v.signature,
-      signedAt: new Date(),
-      approvedName: state.customer.name,
-      approvedPosition: state.customer.position,
-    };
-    $("#pinSheet").hidden = true;
-    $("#pinInput").value = "";
-    vibrate(20);
-    refreshSignState();
-    setTimeout(() => $("#generateBtn").scrollIntoView({ behavior: "smooth", block: "center" }), 120);
-  } catch (err) {
-    const m = String(err.message);
-    $("#pinError").textContent = m.startsWith("LOCKED")
-      ? `Too many attempts. Try again in ${m.split(":")[1]} seconds.`
-      : "Incorrect passcode.";
-    $("#pinError").hidden = false;
-    $("#pinInput").value = "";
-    vibrate(60);
-  } finally {
-    $("#pinOk").disabled = false;
-  }
+  state.tc = {
+    signatoryName: v.signatoryName,
+    position: v.position,
+    signature: v.signature,
+    signedAt: new Date(),
+    approvedName: state.customer.name,
+    approvedPosition: state.customer.position,
+  };
+  vibrate(20);
+  refreshSignState();
+  setTimeout(() => $("#generateBtn").scrollIntoView({ behavior: "smooth", block: "center" }), 120);
 });
 
 /* ------------------------------ PDF ------------------------------ */
@@ -461,24 +435,19 @@ function finish() {
   show("home");
 }
 
-/* ------------------------------ Settings (vault) ------------------------------ */
+/* ------------------------------ Settings (TerraCharge signature) ------------------------------ */
 let setupSig = null;
 function renderSettings() {
-  const info = vaultInfo();
+  const info = getTcSignature();
   $("#vaultExisting").hidden = !info;
   $("#vaultForm").hidden = !!info;
   $("#vaultError").hidden = true;
   if (info) {
-    $("#vaultExistingText").textContent = `${info.signatoryName}${info.position ? `, ${info.position}` : ""} · saved ${formatDateLong(new Date(info.createdAt))}`;
+    $("#vaultExistingText").textContent = `${info.signatoryName} · saved ${formatDateLong(new Date(info.createdAt))}`;
+    $("#vaultExistingImg").src = info.signature.dataUrl;
   } else {
     setupSig = null;
     $("#tcSetupBox").dataset.empty = "true";
-    $("#tcPin").value = "";
-    $("#tcPin2").value = "";
-  }
-  if (!cryptoAvailable()) {
-    $("#vaultError").textContent = "Secure storage needs the app to be opened over HTTPS (or localhost). See README.";
-    $("#vaultError").hidden = false;
   }
   $("#aboutText").textContent =
     `Agreement version ${AGREEMENT.version}${AGREEMENT.isPlaceholder ? " (DRAFT placeholder terms)" : ""}. ` +
@@ -498,7 +467,7 @@ $("#tcSetupBox").addEventListener("click", () => {
 });
 
 $("#vaultReplace").addEventListener("click", () => {
-  if (!confirm("Replace the stored TerraCharge signature? You'll set a new passcode.")) return;
+  if (!confirm("Replace the stored TerraCharge signature?")) return;
   $("#vaultExisting").hidden = true;
   $("#vaultForm").hidden = false;
   setupSig = null;
@@ -506,41 +475,30 @@ $("#vaultReplace").addEventListener("click", () => {
 });
 $("#vaultDelete").addEventListener("click", () => {
   if (!confirm("Delete the stored TerraCharge signature from this iPhone?")) return;
-  deleteVault();
+  deleteTcSignature();
   toast("Signature deleted");
   renderSettings();
 });
 
-$("#vaultForm").addEventListener("submit", async (e) => {
+$("#vaultForm").addEventListener("submit", (e) => {
   e.preventDefault();
   const err = (m) => { $("#vaultError").textContent = m; $("#vaultError").hidden = false; };
   const name = $("#tcName").value.trim();
   const position = $("#tcPosition").value.trim();
-  const p1 = $("#tcPin").value;
-  const p2 = $("#tcPin2").value;
-  if (!cryptoAvailable()) return err("Secure storage needs HTTPS (or localhost).");
-  if (name.length < 3) return err("Enter the signatory's full name.");
-  if (!setupSig) return err("Draw your signature in the box.");
-  if (!/^\d{6,12}$/.test(p1)) return err("Passcode must be 6–12 digits.");
-  if (/^(\d)\1+$/.test(p1) || "0123456789012".includes(p1) || "9876543210987".includes(p1)) return err("Choose a less predictable passcode.");
-  if (p1 !== p2) return err("Passcodes don't match.");
-  busy(true, "Encrypting…");
+  if (name.length < 3) return err("Enter your full name.");
+  if (!setupSig) return err("Tap the box and draw your signature.");
   try {
-    await saveVault({ signatoryName: name, position, signature: setupSig, passcode: p1 });
-    $("#tcPin").value = "";
-    $("#tcPin2").value = "";
-    toast("TerraCharge signature saved securely");
-    if (settingsReturn === "agreement") {
-      settingsReturn = "home";
-      show("agreement");
-      refreshSignState();
-    } else renderSettings();
+    saveTcSignature({ signatoryName: name, position, signature: setupSig });
   } catch (ex) {
     console.error(ex);
-    err("Could not save. Please try again.");
-  } finally {
-    busy(false);
+    return err("Could not save the signature on this iPhone. Please try again.");
   }
+  toast("TerraCharge signature saved");
+  if (settingsReturn === "agreement") {
+    settingsReturn = "home";
+    show("agreement");
+    refreshSignState();
+  } else renderSettings();
 });
 
 /* ------------------------------ Misc ------------------------------ */

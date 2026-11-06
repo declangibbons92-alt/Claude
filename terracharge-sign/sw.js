@@ -3,7 +3,7 @@
  * signing and PDF creation work with no signal.
  * Bump CACHE_VERSION whenever you change any file (e.g. the agreement text).
  */
-const CACHE_VERSION = "tc-sign-v6";
+const CACHE_VERSION = "tc-sign-v7";
 const ASSETS = [
   "./",
   "index.html",
@@ -13,7 +13,7 @@ const ASSETS = [
   "js/agreement.js",
   "js/signature-pad.js",
   "js/pdf-builder.js",
-  "js/vault.js",
+  "js/signature-store.js",
   "js/util.js",
   "vendor/jspdf.umd.min.js",
   "vendor/pdf.min.js",

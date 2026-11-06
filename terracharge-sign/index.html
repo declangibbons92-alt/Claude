@@ -145,7 +145,7 @@
         </div>
         <p class="tc-meta" id="tcMeta"></p>
         <button class="btn btn--black btn--block" id="approveBtn">
-          <svg class="i"><use href="#lock"/></svg> Approve &amp; Countersign
+          <svg class="i"><use href="#pen"/></svg> Add TerraCharge signature
         </button>
         <button class="btn btn--green btn--xl btn--block" id="generateBtn" hidden>Create PDF</button>
       </section>
@@ -180,26 +180,27 @@
     <main class="scroll pad">
       <div id="vaultExisting" hidden>
         <div class="card card--ok">
-          <svg class="i"><use href="#lock"/></svg>
+          <svg class="i"><use href="#check"/></svg>
           <div>
-            <strong>Authorised signature stored</strong>
+            <strong>Your signature is saved</strong>
             <p class="small" id="vaultExistingText"></p>
           </div>
+        </div>
+        <div class="sigbox" data-empty="false">
+          <span class="sigbox__label">TerraCharge signature</span>
+          <img alt="Saved TerraCharge signature" id="vaultExistingImg" />
         </div>
         <button class="btn btn--outline btn--block" id="vaultReplace">Replace signature</button>
         <button class="btn btn--danger-text btn--block" id="vaultDelete">Delete stored signature</button>
       </div>
 
       <form id="vaultForm" hidden autocomplete="off">
-        <p class="muted">Your signature is encrypted on this iPhone with a passcode. It is only added to an agreement when you approve it with that passcode. It never leaves the device.</p>
+        <p class="muted">Draw your signature once. It's saved on this iPhone only and added to each agreement with one tap.</p>
         <label class="field">
-          <span class="field__label">Signatory name</span>
-          <input id="tcName" class="input" type="text" autocapitalize="words" required maxlength="80" placeholder="Your full name" />
+          <span class="field__label">Your name</span>
+          <input id="tcName" class="input" type="text" autocapitalize="words" required maxlength="80" placeholder="Your full name" value="Declan Gibbons" />
         </label>
-        <label class="field">
-          <span class="field__label">Position</span>
-          <input id="tcPosition" class="input" type="text" autocapitalize="words" maxlength="80" placeholder="e.g. Director" value="Director" />
-        </label>
+        <input id="tcPosition" type="hidden" value="" />
         <div class="field">
           <span class="field__label">Signature</span>
           <div class="sigbox" id="tcSetupBox" data-empty="true">
@@ -207,16 +208,8 @@
             <img alt="" id="tcSetupImg" />
           </div>
         </div>
-        <label class="field">
-          <span class="field__label">Approval passcode (6+ digits)</span>
-          <input id="tcPin" class="input" type="password" inputmode="numeric" pattern="[0-9]*" minlength="6" maxlength="12" autocomplete="new-password" />
-        </label>
-        <label class="field">
-          <span class="field__label">Confirm passcode</span>
-          <input id="tcPin2" class="input" type="password" inputmode="numeric" pattern="[0-9]*" minlength="6" maxlength="12" autocomplete="new-password" />
-        </label>
         <p class="error" id="vaultError" hidden></p>
-        <button class="btn btn--green btn--block" type="submit">Save securely</button>
+        <button class="btn btn--green btn--block" type="submit">Save signature</button>
       </form>
 
       <p class="muted small about" id="aboutText"></p>
@@ -239,21 +232,6 @@
       <button class="btn btn--outline" id="sigCancel">Cancel</button>
       <button class="btn btn--green" id="sigConfirm" disabled>Confirm</button>
     </div>
-  </div>
-
-  <!-- ================= PASSCODE SHEET ================= -->
-  <div class="sheet-backdrop" id="pinSheet" hidden>
-    <form class="sheet" id="pinForm" autocomplete="off">
-      <div class="sheet__grab"></div>
-      <h3 class="h3"><svg class="i"><use href="#lock"/></svg> Approve completion</h3>
-      <p class="muted small">Enter the TerraCharge approval passcode to apply the authorised signature.</p>
-      <input id="pinInput" class="input input--pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="12" />
-      <p class="error" id="pinError" hidden></p>
-      <div class="sheet__row">
-        <button type="button" class="btn btn--outline" id="pinCancel">Cancel</button>
-        <button type="submit" class="btn btn--black grow" id="pinOk">Approve</button>
-      </div>
-    </form>
   </div>
 
   <div class="busy" id="busy" hidden><div class="spinner"></div><span id="busyText">Working…</span></div>
