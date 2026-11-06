@@ -322,3 +322,8 @@ mark.fill {
   max-height: 40vh; overflow: auto; word-break: break-word;
 }
 .diag__v { margin-top: 6px; opacity: .8; font-size: 11px; }
+.diag-badge {
+  position: fixed; z-index: 99; right: calc(8px + var(--sar)); bottom: calc(var(--sab) + 4px);
+  font: 600 10px/1 var(--font); color: rgba(120,128,124,.75); pointer-events: none;
+}
+.diag-badge.bad { color: #fff; background: #b42318; padding: 4px 6px; border-radius: 6px; }

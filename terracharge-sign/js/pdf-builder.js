@@ -3,8 +3,8 @@
  * One A4 page, laid out like TerraCharge's paper Unit Hosting Agreement.
  * No network access is needed.
  */
-import { AGREEMENT, fillTokens, segments } from "./agreement.js";
-import { formatDateLong, formatTime, tzLabel } from "./util.js";
+import { AGREEMENT, fillTokens, segments } from "./agreement.js?v=10";
+import { formatDateLong, formatTime, tzLabel } from "./util.js?v=10";
 
 const DARK = [15, 23, 20]; // #0F1714
 const GREEN = [61, 220, 78]; // #3DDC4E

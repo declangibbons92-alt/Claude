@@ -4,7 +4,7 @@
  * so a screenshot is enough to diagnose it. Tap the bar to hide it.
  */
 (function () {
-  window.TC_APP_VERSION = "v9";
+  window.TC_APP_VERSION = "v10";
   var shown = [];
   function report(msg) {
     msg = String(msg || "Unknown error");
@@ -21,6 +21,7 @@
     var line = document.createElement("div");
     line.textContent = "⚠ " + msg;
     bar.appendChild(line);
+    if (window.TC_BADGE && document.body) window.TC_BADGE();
     if (!bar.dataset.v) {
       var v = document.createElement("div");
       v.className = "diag__v";
@@ -40,10 +41,27 @@
   window.addEventListener("unhandledrejection", function (e) {
     report("Promise: " + (e && e.reason && (e.reason.message || e.reason)));
   });
+  // Small version badge in the corner: grey when all is well, red if the app
+  // did not start or an error happened. Makes any screenshot diagnosable.
+  function badge() {
+    var b = document.getElementById("diagBadge");
+    if (!b) {
+      b = document.createElement("div");
+      b.id = "diagBadge";
+      b.className = "diag-badge";
+      document.body.appendChild(b);
+    }
+    var ok = window.TC_APP_READY && shown.length === 0;
+    b.textContent = window.TC_APP_VERSION + (ok ? "" : window.TC_APP_READY ? " · " + shown.length + " error" : " · not started");
+    b.classList.toggle("bad", !ok);
+  }
+  window.TC_BADGE = badge;
   // If the main app never finishes starting, say so.
   window.addEventListener("load", function () {
+    badge();
     setTimeout(function () {
       if (!window.TC_APP_READY) report("App did not finish starting");
+      badge();
     }, 4000);
   });
 })();

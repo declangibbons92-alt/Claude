@@ -1,8 +1,8 @@
-import { AGREEMENT } from "./agreement.js";
-import { SignaturePad } from "./signature-pad.js";
-import { buildAgreementPdf } from "./pdf-builder.js";
-import { getTcSignature, saveTcSignature, deleteTcSignature } from "./signature-store.js";
-import { $, $$, on, escapeHtml, formatDateLong, isoLocalDate, makeReference, slug, vibrate } from "./util.js";
+import { AGREEMENT } from "./agreement.js?v=10";
+import { SignaturePad } from "./signature-pad.js?v=10";
+import { buildAgreementPdf } from "./pdf-builder.js?v=10";
+import { getTcSignature, saveTcSignature, deleteTcSignature } from "./signature-store.js?v=10";
+import { $, $$, on, escapeHtml, formatDateLong, isoLocalDate, makeReference, slug, vibrate } from "./util.js?v=10";
 
 /* ------------------------------------------------------------------ */
 /* State — held in memory only. Customer details and signatures are    */
@@ -24,9 +24,11 @@ state = freshState();
 
 /* ------------------------------ Navigation ------------------------------ */
 let current = "home";
+let updateReady = false; // a newer app version is waiting to be applied
 function show(name) {
   $$(".screen").forEach((s) => s.classList.toggle("is-active", s.dataset.screen === name));
   current = name;
+  if (name === "home" && updateReady) return location.reload(); // apply a waiting update safely
   if (name === "home") refreshHome();
   if (name === "settings") renderSettings();
 }
@@ -365,7 +367,7 @@ async function renderPreview(blob) {
     host.innerHTML = `<p class="pad muted">Preview unavailable. Use “Save / Share PDF” to open it.</p>`;
     return;
   }
-  lib.GlobalWorkerOptions.workerSrc = "vendor/pdf.worker.min.js";
+  lib.GlobalWorkerOptions.workerSrc = "vendor/pdf.worker.min.js?v=10";
   const data = new Uint8Array(await blob.arrayBuffer());
   const pdf = await lib.getDocument({ data, isEvalSupported: false }).promise;
   const cssW = Math.min(host.clientWidth || window.innerWidth, 820) - 20;
@@ -512,8 +514,21 @@ document.addEventListener("visibilitychange", () => {
 });
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  const hadController = !!navigator.serviceWorker.controller;
+  // Tell the service worker this page runs current code (see sw.js activate).
+  navigator.serviceWorker.addEventListener("message", (e) => {
+    if (e.data && e.data.type === "tc-ping" && e.ports[0]) e.ports[0].postMessage("pong");
+  });
+  // A new version took over: reload now if nothing is in progress, otherwise
+  // as soon as the user is back on the home screen (never mid-signing).
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController) return; // first install, already running the latest files
+    updateReady = true;
+    if (current === "home") location.reload();
+  });
   navigator.serviceWorker.register("sw.js").catch((e) => console.warn("SW registration failed", e));
 }
 
 refreshHome();
 window.TC_APP_READY = true;
+window.TC_BADGE?.();

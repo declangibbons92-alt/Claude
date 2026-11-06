@@ -8,7 +8,7 @@
  *   expired (a redirect), the cached copy is used instead.
  * Bump CACHE_VERSION whenever you change any file (e.g. the agreement text).
  */
-const CACHE_VERSION = "tc-sign-v9";
+const CACHE_VERSION = "tc-sign-v10";
 const NETWORK_TIMEOUT_MS = 3500;
 const ASSETS = [
   "./",
@@ -39,12 +39,39 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
+// Ask an open page whether it runs current code (current pages answer "pong").
+function pingClient(client) {
+  return new Promise((resolve) => {
+    const ch = new MessageChannel();
+    const t = setTimeout(() => resolve(false), 1500);
+    ch.port1.onmessage = () => { clearTimeout(t); resolve(true); };
+    try { client.postMessage({ type: "tc-ping" }, [ch.port2]); } catch { clearTimeout(t); resolve(false); }
+  });
+}
+
+async function refreshOldPages() {
+  // Pages from an older version (which can't answer the ping) are reloaded so
+  // old and new files never mix. Current pages reload themselves safely.
+  const clients = await self.clients.matchAll({ type: "window" });
+  for (const c of clients) {
+    if (!(await pingClient(c))) c.navigate(c.url).catch(() => {});
+  }
+}
+
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+  let upgraded = false;
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    const old = keys.filter((k) => k !== CACHE_VERSION);
+    upgraded = old.length > 0;
+    await Promise.all(old.map((k) => caches.delete(k)));
+    await self.clients.claim();
+  })().then(() => {
+    // IMPORTANT: run AFTER activation has finished. Navigating a page while
+    // still activating deadlocks (the reload waits for this worker, which
+    // waits for the reload) and freezes the page.
+    if (upgraded) setTimeout(() => refreshOldPages().catch(() => {}), 0);
+  }));
 });
 
 function cacheKey(req) {

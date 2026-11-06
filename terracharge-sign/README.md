@@ -100,7 +100,7 @@ In **Safari**, open the address → **Share** → **Add to Home Screen**. Open i
 
 ## Updating
 
-After changing any file, bump `CACHE_VERSION` in `sw.js`. An installed app picks up the new version the next time it's opened online. Close and reopen it once more to see the change.
+After changing any file, run `node deploy/bump-version.mjs <next number>`. An installed app picks up the new version the next time it's opened online. The small version number in the bottom-right corner shows which version is running, and it turns red if something failed.
 
 ## Deployment (Cloudflare)
 
@@ -112,7 +112,7 @@ After changing any file, bump `CACHE_VERSION` in `sw.js`. An installed app picks
 
 ### Publishing an update
 
-1. Make the change and bump `CACHE_VERSION` in `sw.js`.
+1. Make the change, then stamp a new version everywhere: `node deploy/bump-version.mjs <next number>`. This updates every file's `?v=` tag, the offline cache name and the corner badge, so an iPhone can never mix old and new files. Open apps pick up the update by themselves, and never mid-signing.
 2. Build the single-file bundle and upload it. This needs only an API token with **Cloudflare Pages: Edit**:
 
 ```bash
