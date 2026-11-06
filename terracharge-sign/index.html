@@ -16,6 +16,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="css/app.css" />
+  <script src="js/diag.js"></script>
   <script src="vendor/jspdf.umd.min.js" defer></script>
   <script src="vendor/pdf.min.js" defer></script>
   <script type="module" src="js/app.js"></script>
@@ -203,10 +204,13 @@
         <input id="tcPosition" type="hidden" value="" />
         <div class="field">
           <span class="field__label">Signature</span>
-          <div class="sigbox" id="tcSetupBox" data-empty="true">
+          <button type="button" class="sigbox sigbox--button" id="tcSetupBox" data-empty="true">
             <span class="sigbox__label">Tap to draw your signature</span>
             <img alt="" id="tcSetupImg" />
-          </div>
+          </button>
+          <button type="button" class="btn btn--black btn--block" id="tcDrawBtn">
+            <svg class="i"><use href="#pen"/></svg> Draw signature
+          </button>
         </div>
         <p class="error" id="vaultError" hidden></p>
         <button class="btn btn--green btn--block" type="submit">Save signature</button>

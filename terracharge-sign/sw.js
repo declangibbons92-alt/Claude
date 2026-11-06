@@ -8,7 +8,7 @@
  *   expired (a redirect), the cached copy is used instead.
  * Bump CACHE_VERSION whenever you change any file (e.g. the agreement text).
  */
-const CACHE_VERSION = "tc-sign-v8";
+const CACHE_VERSION = "tc-sign-v9";
 const NETWORK_TIMEOUT_MS = 3500;
 const ASSETS = [
   "./",
@@ -21,6 +21,7 @@ const ASSETS = [
   "js/pdf-builder.js",
   "js/signature-store.js",
   "js/util.js",
+  "js/diag.js",
   "vendor/jspdf.umd.min.js",
   "vendor/pdf.min.js",
   "vendor/pdf.worker.min.js",

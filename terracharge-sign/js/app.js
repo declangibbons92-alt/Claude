@@ -450,11 +450,12 @@ function renderSettings() {
     $("#tcSetupBox").dataset.empty = "true";
   }
   $("#aboutText").textContent =
-    `Agreement version ${AGREEMENT.version}${AGREEMENT.isPlaceholder ? " (DRAFT placeholder terms)" : ""}. ` +
+    `App ${window.TC_APP_VERSION || "?"} · Agreement version ${AGREEMENT.version}${AGREEMENT.isPlaceholder ? " (DRAFT placeholder terms)" : ""}. ` +
     "Customer details and signatures are kept in memory only while an agreement is open, and are never sent to any server.";
 }
 
-on("#tcSetupBox", "click", () => {
+function drawTcSignature(e) {
+  e?.preventDefault?.();
   openPad({
     title: "TerraCharge signature",
     sub: $("#tcName").value.trim(),
@@ -462,9 +463,12 @@ on("#tcSetupBox", "click", () => {
       setupSig = sig;
       $("#tcSetupImg").src = sig.dataUrl;
       $("#tcSetupBox").dataset.empty = "false";
+      $("#tcDrawBtn").lastChild.textContent = " Draw again";
     },
   });
-});
+}
+on("#tcSetupBox", "click", drawTcSignature);
+on("#tcDrawBtn", "click", drawTcSignature);
 
 on("#vaultReplace", "click", () => {
   if (!confirm("Replace the stored TerraCharge signature?")) return;
@@ -512,3 +516,4 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
 }
 
 refreshHome();
+window.TC_APP_READY = true;

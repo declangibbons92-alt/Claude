@@ -308,3 +308,17 @@ mark.fill {
   .sign, .doc__head, .doc__ref, .doc__foot, .draft-banner { max-width: 688px; margin-left: auto; margin-right: auto; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Signature box as a real button (reliable taps on iPhone Safari) */
+.sigbox--button { appearance: none; -webkit-appearance: none; padding: 0; font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+.sigbox--button:active { background: var(--grey-50); }
+#tcDrawBtn { margin-top: -2px; }
+
+/* On-screen error reporter */
+.diag {
+  position: fixed; z-index: 100; left: 10px; right: 10px; bottom: calc(var(--sab) + 10px);
+  background: #b42318; color: #fff; border-radius: 12px; padding: 10px 12px;
+  font: 13px/1.4 var(--font); box-shadow: 0 10px 30px -10px rgba(0,0,0,.5);
+  max-height: 40vh; overflow: auto; word-break: break-word;
+}
+.diag__v { margin-top: 6px; opacity: .8; font-size: 11px; }
